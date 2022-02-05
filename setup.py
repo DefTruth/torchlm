@@ -16,8 +16,7 @@ setuptools.setup(
     install_requires=[
         "opencv-python>=4.2.1",
         "numpy>=1.14.4",
-        "torch>=1.6.0",
-        "onnxruntime>=1.7.0"
+        "torch>=1.6.0"
     ],
     classifiers=(
         "Programming Language :: Python :: 3",
