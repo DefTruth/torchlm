@@ -1,2 +1,2 @@
-# pylandmarks
-💎 A PyTorch style data augmentation library for landmarks and object detection.
+# TorchAug
+💎 A PyTorch style data augmentation library for image classification, landmarks regression, object detection, segmentation and matting.
