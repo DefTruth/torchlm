@@ -1,2 +1,2 @@
-# TorchAug
-💎 A PyTorch style data augmentation library for image, landmarks, detection, segmentation and matting.
+# LandmarksAug
+💎A PyTorch style data augmentation library landmarks detection, Compatible with TF and Keras.
