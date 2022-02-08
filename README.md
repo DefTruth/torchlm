@@ -1,2 +1,2 @@
 # LandmarksAug
-💎A PyTorch style data augmentation library landmarks detection, Compatible with TF and Keras.
+💎A PyTorch style library with 60+ data augmentation for landmarks detection, compatible with TF and Keras.
