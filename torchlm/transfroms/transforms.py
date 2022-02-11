@@ -136,6 +136,9 @@ class LandmarksTransform(object):
         """
         raise NotImplementedError
 
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + '()'
+
     def apply_affine_to(
             self,
             other_landmarks: Landmarks_InOutput_Type,
@@ -183,7 +186,10 @@ class BindTorchVisionTransform(LandmarksTransform):
         torchvision.transforms.RandomEqualize
     )
 
-    def __init__(self, transform: torch.nn.Module):
+    def __init__(
+            self,
+            transform: torch.nn.Module
+    ):
         super(BindTorchVisionTransform, self).__init__()
         assert isinstance(transform, self._Supported_Image_Only_Set), \
             f"Only supported image only transform, " \
@@ -206,68 +212,124 @@ class BindTorchVisionTransform(LandmarksTransform):
 class BindAlbumentationsTransform(LandmarksTransform):
 
     # TODO: 需要修改
-    def __init__(self, transform: torch.nn.Module):
+    def __init__(
+            self,
+            transform: Callable
+    ):
         super(BindAlbumentationsTransform, self).__init__()
         self.transform_internal = transform
 
+    @autodtye_array
     def __call__(
             self,
             img: Image_InOutput_Type,
             landmarks: Landmarks_InOutput_Type
     ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
         # TODO: update this method to bind ImageOnly|DualTransform
+        #       Don't use, not support now!
         return super(BindAlbumentationsTransform, self).__call__(
             img,
             landmarks
         )
 
 
-class BindLambdaTransform(LandmarksTransform):
+Callable_Array_Func_Type = Callable[
+    [np.ndarray, np.ndarray],  # input
+    Tuple[np.ndarray, np.ndarray]  # output
+]
+
+Callable_Tensor_Func_Type = Callable[
+    [Tensor, Tensor],  # input
+    Tuple[Tensor, Tensor]  # output
+]
+
+class BindArrayCallable(LandmarksTransform):
     """绑定一个自定义函数，ImageOnly或Dual均可"""
 
-    # TODO: 需要修改
-    def __init__(self, call_func: Callable):
-        super(BindLambdaTransform, self).__init__()
+    def __init__(
+            self,
+            call_func: Callable_Array_Func_Type
+    ):
+        super(BindArrayCallable, self).__init__()
         if not callable(call_func):
             raise TypeError(
-                "Argument lambd should be callable, "
+                "Argument call_func should be callable, "
                 "got {}".format(repr(type(call_func).__name__))
             )
-        self.call_func = call_func
+        self.call_func: Callable_Array_Func_Type = call_func
 
+    @autodtye_array
     def __call__(
             self,
             img: Image_InOutput_Type,
             landmarks: Landmarks_InOutput_Type
     ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
-        # TODO: update this method to bind ImageOnly|DualTransform
-        return super(BindLambdaTransform, self).__call__(
-            img,
-            landmarks
-        )
+        return self.call_func(img, landmarks)
 
 
-Bind_Transform_Input_Type = Union[
+class BindTensorCallable(LandmarksTransform):
+    """绑定一个自定义函数，ImageOnly或Dual均可"""
+
+    def __init__(
+            self,
+            call_func: Callable_Tensor_Func_Type
+    ):
+        super(BindTensorCallable, self).__init__()
+        if not callable(call_func):
+            raise TypeError(
+                "Argument call_func should be callable, "
+                "got {}".format(repr(type(call_func).__name__))
+            )
+        self.call_func: Callable_Tensor_Func_Type = call_func
+
+    @autodtye_tensor
+    def __call__(
+            self,
+            img: Image_InOutput_Type,
+            landmarks: Landmarks_InOutput_Type
+    ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
+        return self.call_func(img, landmarks)
+
+
+Bind_Transform_Or_Callable_Input_Type = Union[
     torch.nn.Module,
-    torch.nn.Module  # TODO 修改成Albumentations类型
+    Callable,  # TODO 修改成Albumentations类型
+    Callable_Array_Func_Type,
+    Callable_Tensor_Func_Type
 ]
 
 Bind_Transform_Output_Type = Union[
     BindTorchVisionTransform,
-    BindAlbumentationsTransform
+    BindAlbumentationsTransform,
+    BindArrayCallable,
+    BindTensorCallable
 ]
 
 
 # bind method
 def bind(
-        transform: Bind_Transform_Input_Type
+        transform_or_callable: Bind_Transform_Or_Callable_Input_Type,
+        callable_func: Optional[bool] = False,
+        callable_type: Optional[str] = "np.ndarray"
 ) -> Bind_Transform_Output_Type:
-    # bind torchvision transform
-    if isinstance(transform, torch.nn.Module):
-        return BindTorchVisionTransform(transform)
+    """
+    :param transform_or_callable some custom transform from torchvision and albumentations,
+           or some custom transform callable functions defined by users.
+    :param callable_func indicates the transform is a func or not.
+    :param callable_type only use when bind a callable function.
+    """
+    if not callable_func:
+        # bind torchvision transform
+        if isinstance(transform_or_callable, torch.nn.Module):
+            return BindTorchVisionTransform(transform_or_callable)
+        # bind albumentations transform
+        return BindAlbumentationsTransform(transform_or_callable)
+    else:
+        if callable_type != "np.ndarray":
+            return BindTensorCallable(transform_or_callable)
 
-    # bind albumentations transform
-    return BindAlbumentationsTransform(transform)
+        return BindArrayCallable(transform_or_callable)
+
 
 
 # Pytorch Style Compose
