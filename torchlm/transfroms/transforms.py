@@ -42,6 +42,8 @@ __all__ = [
     "LandmarksRandomBackgroundWithAlpha",
     "BindAlbumentationsTransform",
     "BindTorchVisionTransform",
+    "BindArrayCallable",
+    "BindTensorCallable",
     "bind"
 ]
 
