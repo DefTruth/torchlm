@@ -6,7 +6,8 @@ import random
 import numpy as np
 from pathlib import Path
 
-import torchvision.transforms
+import torchvision
+import albumentations
 from torch import Tensor
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Union, List, Optional, Callable
@@ -55,7 +56,8 @@ def autodtye_array(
     def wrapper(
             self,
             img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type
+            landmarks: Landmarks_InOutput_Type,
+            **kwargs
     ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
         # Type checks
         assert all(
@@ -69,11 +71,21 @@ def autodtye_array(
         )):
             img = F.to_numpy(img)
             landmarks = F.to_numpy(landmarks)
-            img, landmarks = call_array_func(self, img, landmarks)
+            img, landmarks = call_array_func(
+                self,
+                img,
+                landmarks,
+                **kwargs
+            )
             img = F.to_tensor(img)
             landmarks = F.to_tensor(landmarks)
         else:
-            img, landmarks = call_array_func(self, img, landmarks)
+            img, landmarks = call_array_func(
+                self,
+                img,
+                landmarks,
+                **kwargs
+            )
 
         return img, landmarks
 
@@ -87,7 +99,8 @@ def autodtye_tensor(
     def wrapper(
             self,
             img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type
+            landmarks: Landmarks_InOutput_Type,
+            **kwargs
     ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
         # Type checks
         assert all(
@@ -101,11 +114,21 @@ def autodtye_tensor(
         )):
             img = F.to_tensor(img)
             landmarks = F.to_tensor(landmarks)
-            img, landmarks = call_tensor_func(self, img, landmarks)
+            img, landmarks = call_tensor_func(
+                self,
+                img,
+                landmarks,
+                **kwargs
+            )
             img = F.to_numpy(img)
             landmarks = F.to_numpy(landmarks)
         else:
-            img, landmarks = call_tensor_func(self, img, landmarks)
+            img, landmarks = call_tensor_func(
+                self,
+                img,
+                landmarks,
+                **kwargs
+            )
 
         return img, landmarks
 
@@ -116,7 +139,7 @@ class LandmarksTransform(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        # affine records
+        # affine records, for future use.
         self.rotate: float = 0.
         self.scale_x: float = 1.0
         self.scale_y: float = 1.0
@@ -129,11 +152,13 @@ class LandmarksTransform(object):
     def __call__(
             self,
             img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type
+            landmarks: Landmarks_InOutput_Type,
+            **kwargs
     ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
         """
         :param img: np.ndarray | Tensor, H x W x C
         :param landmarks: np.ndarray | Tensor, shape (?, 2), the format is (x1,y1) for each row.
+        :param kwargs: To be compatible with different parameters
         :return:
         """
         raise NotImplementedError
@@ -149,6 +174,7 @@ class LandmarksTransform(object):
             rotate: Optional[bool] = False,
             **kwargs
     ) -> Landmarks_InOutput_Type:
+        # For future use, don't use now!
         _ = kwargs  # un-used
         if translate:
             other_landmarks[:, 0] -= self.trans_x
@@ -170,10 +196,13 @@ class LandmarksTransform(object):
         self.flag = False
 
 
+TorchVision_Transform_Type = torch.nn.Module
+
+
 # Bind TorchVision Transforms
 class BindTorchVisionTransform(LandmarksTransform):
-    """TODO: add docs"""
-    _Supported_Image_Only_Set: Tuple = (
+    # torchvision 0.9.0
+    _Supported_Image_Only_Transform_Set: Tuple = (
         torchvision.transforms.Normalize,
         torchvision.transforms.ColorJitter,
         torchvision.transforms.Grayscale,
@@ -190,12 +219,14 @@ class BindTorchVisionTransform(LandmarksTransform):
 
     def __init__(
             self,
-            transform: torch.nn.Module
+            transform: TorchVision_Transform_Type
     ):
         super(BindTorchVisionTransform, self).__init__()
-        assert isinstance(transform, self._Supported_Image_Only_Set), \
-            f"Only supported image only transform, " \
-            f"{self._Supported_Image_Only_Set}"
+        assert isinstance(
+            transform,
+            self._Supported_Image_Only_Transform_Set
+        ), f"Only supported image only transform for" \
+           f" torchvision:\n {self._Supported_Image_Only_Transform_Set}"
 
         self.transform_internal = transform
 
@@ -207,19 +238,121 @@ class BindTorchVisionTransform(LandmarksTransform):
     ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
         # Image only transform from torchvision,
         # just let the landmarks unchanged.
-        self.flag = True
-        return self.transform_internal(img), landmarks
+        try:
+            img, landmarks = self.transform_internal(img), landmarks
+
+            self.flag = True
+            return img, landmarks
+        except:
+            self.flag = False
+            return img, landmarks
+
+
+Albumentations_Transform_Type = Union[
+    albumentations.ImageOnlyTransform,
+    albumentations.DualTransform
+]
 
 
 class BindAlbumentationsTransform(LandmarksTransform):
+    # albumentations v 1.1.0
+    _Supported_Image_Only_Transform_Set: Tuple = (
+        albumentations.Blur,
+        albumentations.CLAHE,
+        albumentations.ChannelDropout,
+        albumentations.ChannelShuffle,
+        albumentations.ColorJitter,
+        albumentations.Downscale,
+        albumentations.Emboss,
+        albumentations.Equalize,
+        albumentations.FDA,
+        albumentations.FancyPCA,
+        albumentations.FromFloat,
+        albumentations.GaussNoise,
+        albumentations.GaussianBlur,
+        albumentations.GlassBlur,
+        albumentations.HistogramMatching,
+        albumentations.HueSaturationValue,
+        albumentations.ISONoise,
+        albumentations.ImageCompression,
+        albumentations.InvertImg,
+        albumentations.MedianBlur,
+        albumentations.MotionBlur,
+        albumentations.Normalize,
+        albumentations.PixelDistributionAdaptation,
+        albumentations.Posterize,
+        albumentations.RGBShift,
+        albumentations.RandomBrightnessContrast,
+        albumentations.RandomFog,
+        albumentations.RandomGamma,
+        albumentations.RandomRain,
+        albumentations.RandomShadow,
+        albumentations.RandomSnow,
+        albumentations.RandomSunFlare,
+        albumentations.RandomToneCurve,
+        albumentations.Sharpen,
+        albumentations.Solarize,
+        albumentations.Superpixels,
+        albumentations.TemplateTransform,
+        albumentations.ToFloat,
+        albumentations.ToGray
+    )
 
-    # TODO: 需要修改
+    _Supported_Dual_Transform_Set: Tuple = (
+        albumentations.Affine,
+        albumentations.CenterCrop,
+        albumentations.CoarseDropout,
+        albumentations.Crop,
+        albumentations.CropAndPad,
+        albumentations.CropNonEmptyMaskIfExists,
+        albumentations.Flip,
+        albumentations.HorizontalFlip,
+        albumentations.Lambda,
+        albumentations.LongestMaxSize,
+        albumentations.NoOp,
+        albumentations.PadIfNeeded,
+        albumentations.Perspective,
+        albumentations.PiecewiseAffine,
+        albumentations.RandomCrop,
+        albumentations.RandomCropNearBBox,
+        albumentations.RandomGridShuffle,
+        albumentations.RandomResizedCrop,
+        albumentations.RandomRotate90,
+        albumentations.RandomScale,
+        albumentations.RandomSizedCrop,
+        albumentations.Resize,
+        albumentations.Rotate,
+        albumentations.SafeRotate,
+        albumentations.ShiftScaleRotate,
+        albumentations.SmallestMaxSize,
+        albumentations.Transpose,
+        albumentations.VerticalFlip
+    )
+
     def __init__(
             self,
-            transform: Callable
+            transform: Albumentations_Transform_Type,
     ):
         super(BindAlbumentationsTransform, self).__init__()
-        self.transform_internal = transform
+        # wrapper transform with a simple albumentations
+        # Compose to fix KeyPoints format (xy), not support
+        # label_fields now. Because we rarely use it, so,
+        # I decided not to support it to keep the
+        # interface simple.
+        assert any((
+            isinstance(transform, self._Supported_Image_Only_Transform_Set),
+            isinstance(transform, self._Supported_Dual_Transform_Set)
+        )), f"The transform from albumentations must be one of:" \
+            f"\n{self._Supported_Image_Only_Transform_Set}, " \
+            f"\n{self._Supported_Dual_Transform_Set}"
+
+        self.transform_internal = albumentations.Compose(
+            transforms=[transform],
+            keypoint_params=albumentations.KeypointParams(
+                format="xy",
+                remove_invisible=True
+            )  # no label_fields now.
+        )
 
     @autodtye_array
     def __call__(
@@ -227,26 +360,58 @@ class BindAlbumentationsTransform(LandmarksTransform):
             img: Image_InOutput_Type,
             landmarks: Landmarks_InOutput_Type
     ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
-        # TODO: update this method to bind ImageOnly|DualTransform
-        #       Don't use, not support now!
-        return super(BindAlbumentationsTransform, self).__call__(
-            img,
-            landmarks
-        )
+        # The landmarks format for albumentations should be a list of lists(tuple)
+        # in xy format by default. Such as:
+        # keypoints = [
+        #      (264, 203),
+        #      (86, 88),
+        #      (254, 160),
+        #      (193, 103),
+        #      (65, 341)
+        # ]
+        # So, we have to convert the np.ndarray input to list first and then wrap back
+        # to np.ndarray after the albumentations transformation done.
+        assert all((
+            isinstance(img, np.ndarray),
+            isinstance(landmarks, np.ndarray),
+            landmarks.ndim >= 2
+        )), "Inputs must be np.ndarray and the ndim of " \
+            "landmarks should >= 2!"
+
+        keypoints = landmarks[:, :2].tolist()  # (x, y)
+        kps_num = len(keypoints)
+
+        try:
+            transformed = self.transform_internal(image=img, keypoints=keypoints)
+            trans_img = transformed['image']
+            trans_kps = transformed['keypoints']
+
+            if len(trans_kps) == kps_num:
+                # wrap back to np.ndarray
+                trans_kps = np.array(trans_kps).astype(landmarks.dtype)
+                trans_kps = trans_kps.reshape(kps_num, 2)
+                landmarks[:, :2] = trans_kps
+                img = trans_img
+            self.flag = True
+            # changed nothings if any kps been outside
+            return img.astype(np.uint8), landmarks.astype(np.float32)
+        except:
+            self.flag = False
+            return img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-Callable_Array_Func_Type = Callable[
-    [np.ndarray, np.ndarray],  # input
-    Tuple[np.ndarray, np.ndarray]  # output
+Callable_Array_Func_Type = Union[
+    Callable[[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]],
+    Callable[[np.ndarray, np.ndarray, ...], Tuple[np.ndarray, np.ndarray]]
 ]
 
-Callable_Tensor_Func_Type = Callable[
-    [Tensor, Tensor],  # input
-    Tuple[Tensor, Tensor]  # output
+Callable_Tensor_Func_Type = Union[
+    Callable[[Tensor, Tensor], Tuple[Tensor, Tensor]],
+    Callable[[Tensor, Tensor, ...], Tuple[Tensor, Tensor]]
 ]
+
 
 class BindArrayCallable(LandmarksTransform):
-    """绑定一个自定义函数，ImageOnly或Dual均可"""
 
     def __init__(
             self,
@@ -264,13 +429,22 @@ class BindArrayCallable(LandmarksTransform):
     def __call__(
             self,
             img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type
+            landmarks: Landmarks_InOutput_Type,
+            **kwargs
     ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
-        return self.call_func(img, landmarks)
+        try:
+            img, landmarks = self.call_func(img, landmarks, **kwargs)
+
+            self.flag = True
+            return img.astype(np.int32), landmarks.astype(np.float32)
+
+        except:
+
+            self.flag = False
+            return img.astype(np.int32), landmarks.astype(np.float32)
 
 
 class BindTensorCallable(LandmarksTransform):
-    """绑定一个自定义函数，ImageOnly或Dual均可"""
 
     def __init__(
             self,
@@ -288,14 +462,22 @@ class BindTensorCallable(LandmarksTransform):
     def __call__(
             self,
             img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type
+            landmarks: Landmarks_InOutput_Type,
+            **kwargs
     ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
-        return self.call_func(img, landmarks)
+        try:
+            img, landmarks = self.call_func(img, landmarks, **kwargs)
+
+            self.flag = True
+            return img, landmarks
+        except:
+            self.flag = False
+            return img, landmarks
 
 
 Bind_Transform_Or_Callable_Input_Type = Union[
-    torch.nn.Module,
-    Callable,  # TODO 修改成Albumentations类型
+    TorchVision_Transform_Type,
+    Albumentations_Transform_Type,
     Callable_Array_Func_Type,
     Callable_Tensor_Func_Type
 ]
@@ -322,16 +504,22 @@ def bind(
     """
     if not callable_func:
         # bind torchvision transform
-        if isinstance(transform_or_callable, torch.nn.Module):
+        if isinstance(transform_or_callable, TorchVision_Transform_Type):
             return BindTorchVisionTransform(transform_or_callable)
-        # bind albumentations transform
-        return BindAlbumentationsTransform(transform_or_callable)
+        elif isinstance(
+                transform_or_callable,
+                (albumentations.ImageOnlyTransform,
+                 albumentations.DualTransform)
+        ):
+            # bind albumentations transform
+            return BindAlbumentationsTransform(transform_or_callable)
+        else:
+            raise TypeError(f"not supported: {transform_or_callable}")
     else:
         if callable_type != "np.ndarray":
             return BindTensorCallable(transform_or_callable)
 
         return BindArrayCallable(transform_or_callable)
-
 
 
 # Pytorch Style Compose
