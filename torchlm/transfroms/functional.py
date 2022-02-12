@@ -1,11 +1,12 @@
+"""
+Note: The helper codes in this script are heavy based on(many thanks~):
+https://github.com/Paperspace/DataAugmentationForObjectDetection/blob/master/data_aug/bbox_util.py
+"""
 import cv2
 import torch
 import numpy as np
 from torch import Tensor
 from typing import Tuple, Union, Optional, List
-
-
-# TODO: 代码重构 去掉LandmarksTool(不需要经过box转换，直接运算关键点即可，待修改)
 
 
 def to_tensor(x: Union[np.ndarray, Tensor]) -> Tensor:
@@ -43,58 +44,13 @@ def draw_bbox(im: np.ndarray, bboxes: np.ndarray) -> np.ndarray:
     return im.astype(np.uint8)
 
 
-def draw_bbox_landmark(im: np.ndarray, bboxes: np.ndarray, landmarks: np.ndarray,
-                       font: float = 0.25, circle: int = 2, text: bool = False,
-                       refine_circle: bool = False) \
-        -> np.ndarray:
-    im = im[:, :, :].copy()
-    h, w, c = im.shape
-
-    bboxes = bboxes[:, :4]
-    bboxes = bboxes.reshape(-1, 4)
-
-    refine = int(h * (1 / 256) + 1)
-
-    if circle < refine and refine_circle:
-        circle = refine
-
-    # draw bbox
-    for box in bboxes:
-        im = cv2.rectangle(im, (int(box[0]), int(box[1])),
-                           (int(box[2]), int(box[3])), (255, 0, 0), 1)
-    # draw landmarks
-    for i in range(landmarks.shape[0]):
-        landmark_ = landmarks[i]
-        cv2.circle(im, (int(landmark_[0]), int(landmark_[1])), circle, (0, 255, 0), -1)
-        # if i == 33 or i == 48:
-        if text:
-            cv2.putText(im, '{}'.format(i),
-                        (int(landmark_[0]), int(landmark_[1]) - 2),
-                        cv2.FONT_HERSHEY_SIMPLEX, font, (0, 0, 255), 1)
-
-    return im.astype(np.uint8)
-
-
-def draw_landmark(im: np.ndarray, landmarks: np.ndarray,
-                  font: float = 0.25, circle: int = 2, text: bool = False,
-                  color: Optional[Tuple[int, int, int]] = None,
-                  visibilities: Optional[np.ndarray] = None,
-                  refine_circle: bool = False,
-                  text_offset: int = 2,
-                  thickness: int = 1) -> np.ndarray:
-    """
-    :param refine_circle:
-    :param text: draw text or not.
-    :param circle:
-    :param font:
-    :param im:
-    :param landmarks: [num, 2] (x,y)
-    :param color:
-    :param visibilities [num,]
-    :param text_offset:
-    :param thickness
-    :return:
-    """
+def draw_landmarks(im: np.ndarray, landmarks: np.ndarray,
+                   font: float = 0.25, circle: int = 2, text: bool = False,
+                   color: Optional[Tuple[int, int, int]] = None,
+                   visibilities: Optional[np.ndarray] = None,
+                   refine_circle: bool = False,
+                   text_offset: int = 2,
+                   thickness: int = 1) -> np.ndarray:
     im = im.copy()
     h, w, c = im.shape
     refine = int(h * (1 / 512) + 1)

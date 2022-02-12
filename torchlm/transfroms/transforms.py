@@ -12,11 +12,12 @@ from torch import Tensor
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Union, List, Optional, Callable
 from . import functional as F
-
-# base element_type
-Base_Element_Type = Union[np.ndarray, Tensor]
-Image_InOutput_Type = Base_Element_Type  # image
-Landmarks_InOutput_Type = Base_Element_Type  # landmarks
+from .autodtypes import (
+    Image_InOutput_Type,
+    Landmarks_InOutput_Type,
+    AutoDtypeEnum,
+    autodtype
+)
 
 __all__ = [
     "LandmarksCompose",
@@ -47,92 +48,6 @@ __all__ = [
     "BindTensorCallable",
     "bind"
 ]
-
-
-def autodtye_array(
-        call_array_func: Callable
-) -> Callable:
-    # A Pythonic style to auto convert input & output dtype.
-    def wrapper(
-            self,
-            img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type,
-            **kwargs
-    ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
-        # Type checks
-        assert all(
-            [isinstance(_, (np.ndarray, Tensor))
-             for _ in (img, landmarks)]
-        ), "Error dtype, must be np.ndarray or Tensor!"
-
-        if any((
-                isinstance(img, Tensor),
-                isinstance(landmarks, Tensor)
-        )):
-            img = F.to_numpy(img)
-            landmarks = F.to_numpy(landmarks)
-            img, landmarks = call_array_func(
-                self,
-                img,
-                landmarks,
-                **kwargs
-            )
-            img = F.to_tensor(img)
-            landmarks = F.to_tensor(landmarks)
-        else:
-            img, landmarks = call_array_func(
-                self,
-                img,
-                landmarks,
-                **kwargs
-            )
-
-        return img, landmarks
-
-    return wrapper
-
-
-def autodtye_tensor(
-        call_tensor_func: Callable
-) -> Callable:
-    # A Pythonic style to auto convert input & output dtype.
-    def wrapper(
-            self,
-            img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type,
-            **kwargs
-    ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
-        # Type checks
-        assert all(
-            [isinstance(_, (np.ndarray, Tensor))
-             for _ in (img, landmarks)]
-        ), "Error dtype, must be np.ndarray or Tensor!"
-
-        if any((
-                isinstance(img, np.ndarray),
-                isinstance(landmarks, np.ndarray)
-        )):
-            img = F.to_tensor(img)
-            landmarks = F.to_tensor(landmarks)
-            img, landmarks = call_tensor_func(
-                self,
-                img,
-                landmarks,
-                **kwargs
-            )
-            img = F.to_numpy(img)
-            landmarks = F.to_numpy(landmarks)
-        else:
-            img, landmarks = call_tensor_func(
-                self,
-                img,
-                landmarks,
-                **kwargs
-            )
-
-        return img, landmarks
-
-    return wrapper
 
 
 class LandmarksTransform(object):
@@ -230,7 +145,7 @@ class BindTorchVisionTransform(LandmarksTransform):
 
         self.transform_internal = transform
 
-    @autodtye_tensor
+    @autodtype(AutoDtypeEnum.Tensor_InOut)
     def __call__(
             self,
             img: Image_InOutput_Type,
@@ -354,7 +269,7 @@ class BindAlbumentationsTransform(LandmarksTransform):
             )  # no label_fields now.
         )
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: Image_InOutput_Type,
@@ -425,7 +340,7 @@ class BindArrayCallable(LandmarksTransform):
             )
         self.call_func: Callable_Array_Func_Type = call_func
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: Image_InOutput_Type,
@@ -458,7 +373,7 @@ class BindTensorCallable(LandmarksTransform):
             )
         self.call_func: Callable_Tensor_Func_Type = call_func
 
-    @autodtye_tensor
+    @autodtype(AutoDtypeEnum.Tensor_InOut)
     def __call__(
             self,
             img: Image_InOutput_Type,
@@ -624,7 +539,7 @@ class LandmarksNormalize(LandmarksTransform):
         self._mean = mean
         self._std = std
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -649,7 +564,7 @@ class LandmarksUnNormalize(LandmarksTransform):
         self._mean = mean
         self._std = std
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -668,7 +583,8 @@ class LandmarksToTensor(LandmarksTransform):
     def __init__(self):
         super(LandmarksToTensor, self).__init__()
 
-    @autodtye_array
+    # force array input and don't wrap the output back to array.
+    @autodtype(AutoDtypeEnum.Array_In)
     def __call__(
             self,
             img: np.ndarray,
@@ -680,31 +596,24 @@ class LandmarksToTensor(LandmarksTransform):
         img = img.transpose((2, 0, 1))
 
         self.flag = True
-        return torch.from_numpy(img), torch.from_numpy(landmarks)
+        return F.to_tensor(img), F.to_tensor(landmarks)
 
 
 class LandmarksToNumpy(LandmarksTransform):
     def __init__(self):
         super(LandmarksToNumpy, self).__init__()
 
-    @autodtye_array
+    # force tensor input and don't wrap the output back to tensor.
+    @autodtype(AutoDtypeEnum.Tensor_In)
     def __call__(
             self,
-            img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type
+            img: Tensor,
+            landmarks: Tensor,
     ) -> Tuple[np.ndarray, np.ndarray]:
         # C X H X W -> H X W X C
-        if landmarks is not None:
-            landmarks = landmarks.cpu().numpy() \
-                if isinstance(landmarks, Tensor) else landmarks
-
-        if img is not None:
-            img = img.cpu().numpy().transpose((1, 2, 0)) \
-                if isinstance(img, Tensor) else img.transpose((1, 2, 0))
 
         self.flag = True
-
-        return img, landmarks
+        return F.to_numpy(img).transpose((1, 2, 0)), F.to_numpy(landmarks)
 
 
 class LandmarksResize(LandmarksTransform):
@@ -731,7 +640,7 @@ class LandmarksResize(LandmarksTransform):
         else:
             self._letterbox_image_func = F.letterbox_image_v2
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -820,7 +729,7 @@ class LandmarksClip(LandmarksTransform):
         else:
             self._resize_op = None
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -880,7 +789,7 @@ class LandmarksAlign(LandmarksTransform):
 
         self._eyes_index = eyes_index
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -951,7 +860,7 @@ class LandmarksRandomCenterCrop(LandmarksTransform):
         self._height_range = height_range
         self._prob = prob
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1029,7 +938,7 @@ class LandmarksRandomHorizontalFlip(LandmarksTransform):
         super(LandmarksRandomHorizontalFlip, self).__init__()
         self._prob = prob
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1064,7 +973,7 @@ class LandmarksHorizontalFlip(LandmarksTransform):
     def __init__(self):
         super(LandmarksHorizontalFlip, self).__init__()
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1107,7 +1016,7 @@ class LandmarksRandomScale(LandmarksTransform):
 
         self._diff = diff
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1183,7 +1092,7 @@ class LandmarksRandomTranslate(LandmarksTransform):
 
         self._diff = diff
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1273,7 +1182,7 @@ class LandmarksRandomRotate(LandmarksTransform):
             interval = int(abs(self._angle[1] - self._angle[0]))
             self.choose_angles = np.random.uniform(*self._angle, size=interval)
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1355,9 +1264,7 @@ class LandmarksRandomShear(LandmarksTransform):
                 max(-self._shear_factor, self._shear_factor)
             )
 
-        # shear_factor = random.uniform(*self.shear_factor)
-
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1469,7 +1376,7 @@ class LandmarksRandomHSV(LandmarksTransform):
             self._brightness = (min(-self._brightness, self._brightness),
                                 max(-self._brightness, self._brightness))
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1522,7 +1429,7 @@ class LandmarksRandomMask(LandmarksTransform):
         self._trans_ratio = trans_ratio
         self._prob = prob
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1571,7 +1478,7 @@ class LandmarksRandomBlur(LandmarksTransform):
         self._kernel_range = [x for x in self._kernel_range if (x % 2) != 0]  # 奇数
         self._sigma_range = sigma_range
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1620,7 +1527,7 @@ class LandmarksRandomBrightness(LandmarksTransform):
         self.contrast = np.linspace(contrast[0], contrast[1], num=30)
         self.brightness = np.linspace(brightness[0], brightness[1], num=60)
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1676,7 +1583,7 @@ class LandmarksRandomPatches(LandmarksTransform):
         ]
         self._init_patches_paths()
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1800,7 +1707,7 @@ class LandmarksRandomPatchesWithAlpha(LandmarksTransform):
         ]
         self._init_patches_paths()
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
@@ -1920,7 +1827,7 @@ class LandmarksRandomBackgroundWithAlpha(LandmarksTransform):
         ]
         self._init_background_paths()
 
-    @autodtye_array
+    @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
             img: np.ndarray,
