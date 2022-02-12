@@ -643,9 +643,9 @@ class LandmarksResize(LandmarksTransform):
         self._keep_aspect = keep_aspect
 
         if self._keep_aspect:
-            self._letterbox_image_func = F.letterbox_image
+            self._letterbox_image = F.letterbox_image
         else:
-            self._letterbox_image_func = F.letterbox_image_v2
+            self._letterbox_image = F.letterbox_image_v2
 
     @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
@@ -655,7 +655,7 @@ class LandmarksResize(LandmarksTransform):
     ) -> Tuple[np.ndarray, np.ndarray]:
 
         w, h = img.shape[1], img.shape[0]  # original shape
-        new_img = self._letterbox_image_func(img.copy().astype(np.uint8), self._size)
+        new_img = self._letterbox_image(img.copy().astype(np.uint8), self._size)
 
         num_landmarks = len(landmarks)
         landmark_bboxes = F.helper.to_bboxes(landmarks)
