@@ -756,7 +756,6 @@ class LandmarksClip(LandmarksTransform):
 
         lh, lw = abs(y_max - y_min), abs(x_max - x_min)
 
-        # 一定会包含所有的点位
         left = np.maximum(int(x_min) - int(lw * self._width_pad), 0)
         right = np.minimum(int(x_max) + int(lw * self._width_pad), w)
         top = np.maximum(int(y_min) - int(lh * self._height_pad), 0)
@@ -961,7 +960,6 @@ class LandmarksRandomCenterCrop(LandmarksTransform):
         height, width, _ = img.shape
         cx, cy = int(width / 2), int(height / 2)
 
-        # 点位越界
         x_min = np.min(landmarks[:, 0])
         x_max = np.max(landmarks[:, 0])
         y_min = np.min(landmarks[:, 1])
@@ -1091,8 +1089,6 @@ class LandmarksHorizontalFlip(LandmarksTransform):
 
 
 class LandmarksRandomScale(LandmarksTransform):
-    """Randomly scales an image with landmarks
-    """
 
     def __init__(
             self,
@@ -1125,7 +1121,6 @@ class LandmarksRandomScale(LandmarksTransform):
             self.clear_affine()
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
-        # Chose a random digit to scale by
         num_landmarks = len(landmarks)
         new_landmarks = landmarks.copy()
 
@@ -1157,8 +1152,6 @@ class LandmarksRandomScale(LandmarksTransform):
 
 
 class LandmarksRandomTranslate(LandmarksTransform):
-    """Randomly Translates the image with landmarks
-    """
 
     def __init__(
             self,
@@ -1249,8 +1242,6 @@ class LandmarksRandomTranslate(LandmarksTransform):
 
 
 class LandmarksRandomRotate(LandmarksTransform):
-    """Randomly rotates an image with landmarks
-    """
 
     def __init__(
             self,
@@ -1339,8 +1330,6 @@ class LandmarksRandomRotate(LandmarksTransform):
 
 
 class LandmarksRandomShear(LandmarksTransform):
-    """Randomly shears an image in horizontal direction
-    """
 
     def __init__(
             self,
