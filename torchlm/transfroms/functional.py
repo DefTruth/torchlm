@@ -2,6 +2,7 @@
 Note: The helper codes in this script are heavy based on(many thanks~):
 https://github.com/Paperspace/DataAugmentationForObjectDetection/blob/master/data_aug/bbox_util.py
 """
+import os
 import cv2
 import torch
 import numpy as np
@@ -184,12 +185,12 @@ def rotate_im(image: np.ndarray, angle: float) -> np.ndarray:
     return image.astype(np.uint8)
 
 
-def random_mask_img(img: np.ndarray, mask_w: int, mask_h: int) -> Tuple[np.ndarray, List[int]]:
+def apply_mask(img: np.ndarray, mask_w: int, mask_h: int) -> Tuple[np.ndarray, List[int]]:
     h, w, c = img.shape
     mask_w = min(max(0., mask_w), w)
     mask_h = min(max(0., mask_h), h)
-    x0 = np.random.randint(int(-mask_w / 2), int(w - mask_w / 2))
-    y0 = np.random.randint(int(-mask_h / 2), int(h - mask_h / 2))
+    x0 = np.random.randint(0, w - mask_w + 1)
+    y0 = np.random.randint(0, h - mask_h + 1)
     x1, y1 = int(x0 + mask_w), int(y0 + mask_h)
     x0, y0 = max(x0, 0), max(y0, 0)
     x1, y1 = min(x1, w), min(y1, h)
@@ -205,6 +206,159 @@ def random_mask_img(img: np.ndarray, mask_w: int, mask_h: int) -> Tuple[np.ndarr
     mask_corner = [x0, y0, x1, y1]
 
     return img.astype(np.uint8), mask_corner
+
+
+def apply_mask_with_alpha(img: np.ndarray, mask_w: int, mask_h: int, alpha: float) -> Tuple[np.ndarray, List[int]]:
+    h, w, c = img.shape
+    mask_w = min(max(0., mask_w), w)
+    mask_h = min(max(0., mask_h), h)
+    x0 = np.random.randint(0, w - mask_w + 1)
+    y0 = np.random.randint(0, h - mask_h + 1)
+    x1, y1 = int(x0 + mask_w), int(y0 + mask_h)
+    x0, y0 = max(x0, 0), max(y0, 0)
+    x1, y1 = min(x1, w), min(y1, h)
+
+    pixels = list(range(0, 240, 10))
+    mask_value = np.random.choice(pixels, size=c)
+
+    if np.random.uniform(0., 1.0) < 0.35:
+        mask_value = 0
+
+    img_patch = img[y0:y1, x0:x1, :].copy()
+    mask = np.empty_like(img_patch).fill(mask_value)
+    fuse_mask = cv2.addWeighted(mask, alpha, img_patch, 1. - alpha, 0)
+
+    img[y0:y1, x0:x1, :] = fuse_mask[:, :, :]
+
+    mask_corner = [x0, y0, x1, y1]
+
+    return img.astype(np.uint8), mask_corner
+
+
+def apply_patch(img: np.ndarray, patch: np.ndarray) -> Tuple[np.ndarray, List[int]]:
+    h, w, c = img.shape
+    patch_h, patch_w, _ = patch.shape
+    patch_w = min(max(0., patch_w), w)
+    patch_h = min(max(0., patch_h), h)
+    x0 = np.random.randint(0, w - patch_w + 1)
+    y0 = np.random.randint(0, h - patch_h + 1)
+    x1, y1 = int(x0 + patch_w), int(y0 + patch_h)
+    x0, y0 = max(x0, 0), max(y0, 0)
+    x1, y1 = min(x1, w), min(y1, h)
+    img[y0:y1, x0:x1, :] = patch[:, :, :]
+    patch_corner = [x0, y0, x1, y1]
+
+    return img.astype(np.uint8), patch_corner
+
+
+def apply_patch_with_alpha(img: np.ndarray, patch: np.ndarray, alpha: float = 0.5) -> Tuple[np.ndarray, List[int]]:
+    h, w, c = img.shape
+    patch_h, patch_w, _ = patch.shape
+    patch_w = min(max(0., patch_w), w)
+    patch_h = min(max(0., patch_h), h)
+    x0 = np.random.randint(0, w - patch_w + 1)
+    y0 = np.random.randint(0, h - patch_h + 1)
+    x1, y1 = int(x0 + patch_w), int(y0 + patch_h)
+    x0, y0 = max(x0, 0), max(y0, 0)
+    x1, y1 = min(x1, w), min(y1, h)
+    img_patch = img[y0:y1, x0:x1, :].copy()
+    fuse_patch = cv2.addWeighted(patch, alpha, img_patch, 1. - alpha, 0)
+    img[y0:y1, x0:x1, :] = fuse_patch[:, :, :]
+    patch_corner = [x0, y0, x1, y1]
+
+    return img.astype(np.uint8), patch_corner
+
+
+def apply_background(img: np.ndarray, background: np.ndarray) -> np.ndarray:
+    h, w, c = img.shape
+    b_h, b_w, _ = background.shape
+    if b_h <= h or b_w <= w:
+        background = cv2.resize(background, (int(w * 1.2), int(h * 1.2)))
+    b_h, b_w, _ = background.shape
+
+    im_w = min(max(0., w), b_w)
+    im_h = min(max(0., h), b_h)
+    x0 = np.random.randint(0, b_w - im_w + 1)
+    y0 = np.random.randint(0, b_h - im_h + 1)
+    x1, y1 = int(x0 + im_w), int(y0 + im_h)
+    x0, y0 = max(x0, 0), max(y0, 0)
+    x1, y1 = min(x1, b_w), min(y1, b_h)
+    background[y0:y1, x0:x1, :] = img[:, :, :]
+
+    return background.astype(np.uint8)
+
+
+def apply_background_with_alpha(img: np.ndarray, background: np.ndarray, alpha: float = 0.5) -> np.ndarray:
+    h, w, c = img.shape
+    b_h, b_w, _ = background.shape
+    if b_h != h or b_w != w:
+        background = cv2.resize(background, (w, h))
+
+    img = cv2.addWeighted(background, alpha, img, 1. - alpha, 0)
+
+    return img.astype(np.uint8)
+
+
+def select_patch(patch_h: int = 32, patch_w: int = 32, patches_paths: List[str] = ()) -> Union[np.ndarray, None]:
+    patch_path = np.random.choice(patches_paths)
+    patch_img = cv2.imread(patch_path)
+    if patch_img is None:
+        return None
+    h, w, _ = patch_img.shape
+    if h <= patch_h or w <= patch_w:
+        patch = cv2.resize(patch_img, (patch_w, patch_h))
+        return patch
+    x1 = np.random.randint(0, w - patch_w + 1)
+    y1 = np.random.randint(0, h - patch_h + 1)
+    x2 = x1 + patch_w
+    y2 = y1 + patch_h
+    patch = patch_img[y1:y2, x1:x2, :]
+
+    return patch
+
+
+def select_background(img_h: int = 128, img_w: int = 128, background_paths: List[str] = ()) -> Union[np.ndarray, None]:
+    background_path = np.random.choice(background_paths)
+    background_img = cv2.imread(background_path)
+    if background_img is None:
+        return None
+    h, w, _ = background_img.shape
+    if h <= img_h or w <= img_w:
+        background = cv2.resize(background_img, (img_w, img_h))
+        return background
+    # random start
+    x1 = np.random.randint(0, w - img_w + 1)
+    y1 = np.random.randint(0, h - img_h + 1)
+    # random end
+    nw = np.random.randint(img_w // 2, img_w)
+    nh = np.random.randint(img_h // 2, img_h)
+    x2 = x1 + nw
+    y2 = y1 + nh
+    background = background_img[y1:y2, x1:x2, :]
+
+    if nh != img_h or nw != img_w:
+        background = cv2.resize(background, (img_w, img_h))
+        return background
+
+    return background
+
+
+def read_image_files(image_dirs: List[str]) -> List[str]:
+    image_paths = []
+
+    for d in image_dirs:
+        if os.path.exists(d):
+
+            files = [
+                x for x in os.listdir(d) if
+                any((x.lower().endswith("jpeg"),
+                     x.lower().endswith("jpg"),
+                     x.lower().endswith("png")))
+            ]
+            paths = [os.path.join(d, x) for x in files]
+            image_paths.extend(paths)
+
+    return image_paths
 
 
 def get_corners(bboxes: np.ndarray) -> np.ndarray:
@@ -420,7 +574,7 @@ def letterbox_image_v2(img: np.ndarray, inp_dim: Union[int, Tuple[int, int]]) ->
     return resized_image.astype(np.uint8)
 
 
-class LandmarksTool(object):
+class Helper(object):
     """
         Transform or reverse a landmark key-point to bbox,
         then we can augment these landmarks using BBox-like method.
@@ -430,12 +584,14 @@ class LandmarksTool(object):
     VISUAL_H = 3
 
     @classmethod
-    def project_to_bboxes(cls,
-                          landmarks: np.ndarray = None,
-                          visual_w: Optional[int] = None,
-                          visual_h: Optional[int] = None,
-                          img_w: Optional[Union[float, int]] = None,
-                          img_h: Optional[Union[float, int]] = None) -> np.ndarray:
+    def to_bboxes(
+            cls,
+            landmarks: np.ndarray = None,
+            visual_w: Optional[int] = None,
+            visual_h: Optional[int] = None,
+            img_w: Optional[Union[float, int]] = None,
+            img_h: Optional[Union[float, int]] = None
+    ) -> np.ndarray:
         """transform the landmarks to bbox which top-left
         is original landmark key-point. bbox's format is (x1,y1,x2,y2,class),
         which col 5 is visual class for the purpose to reuse BBox-like method.
@@ -479,10 +635,12 @@ class LandmarksTool(object):
         return bboxes
 
     @classmethod
-    def reproject_to_landmarks(cls,
-                               bboxes: np.ndarray = None,
-                               img_w: Optional[Union[float, int]] = None,
-                               img_h: Optional[Union[float, int]] = None) -> np.ndarray:
+    def to_landmarks(
+            cls,
+            bboxes: np.ndarray = None,
+            img_w: Optional[Union[float, int]] = None,
+            img_h: Optional[Union[float, int]] = None
+    ) -> np.ndarray:
         """Extract landmarks from bbox, top-left.
         :param img_h:
         :param img_w:
@@ -505,9 +663,9 @@ class LandmarksTool(object):
         return landmarks  # retain x1,y1 only.
 
 
-class LandmarkMissError(Exception):
+class Error(Exception):
     pass
 
 
 # alias
-landmarks_tool = LandmarksTool
+helper = Helper

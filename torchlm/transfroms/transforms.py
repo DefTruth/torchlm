@@ -1,16 +1,14 @@
-import os
 import cv2
 import math
 import torch
 import random
 import numpy as np
-from pathlib import Path
-
 import torchvision
 import albumentations
 from torch import Tensor
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Union, List, Optional, Callable
+
 from . import functional as F
 from .autodtypes import (
     Image_InOutput_Type,
@@ -28,6 +26,7 @@ __all__ = [
     "LandmarksResize",
     "LandmarksClip",
     "LandmarksAlign",
+    "LandmarksRandomAlign",
     "LandmarksRandomCenterCrop",
     "LandmarksRandomHorizontalFlip",
     "LandmarksHorizontalFlip",
@@ -40,12 +39,15 @@ __all__ = [
     "LandmarksRandomBlur",
     "LandmarksRandomBrightness",
     "LandmarksRandomPatches",
+    "LandmarksRandomBackground",
     "LandmarksRandomPatchesWithAlpha",
     "LandmarksRandomBackgroundWithAlpha",
+    "LandmarksRandomMaskWithAlpha",
     "BindAlbumentationsTransform",
     "BindTorchVisionTransform",
     "BindArrayCallable",
     "BindTensorCallable",
+    "BindEnum",
     "bind"
 ]
 
@@ -116,7 +118,7 @@ TorchVision_Transform_Type = torch.nn.Module
 
 # Bind TorchVision Transforms
 class BindTorchVisionTransform(LandmarksTransform):
-    # torchvision 0.9.0
+    # torchvision >= 0.9.0
     _Supported_Image_Only_Transform_Set: Tuple = (
         torchvision.transforms.Normalize,
         torchvision.transforms.ColorJitter,
@@ -170,7 +172,7 @@ Albumentations_Transform_Type = Union[
 
 
 class BindAlbumentationsTransform(LandmarksTransform):
-    # albumentations v 1.1.0
+    # albumentations >= v 1.1.0
     _Supported_Image_Only_Transform_Set: Tuple = (
         albumentations.Blur,
         albumentations.CLAHE,
@@ -405,19 +407,23 @@ Bind_Transform_Output_Type = Union[
 ]
 
 
+class BindEnum:
+    Transform: int = 0
+    Callable_Array: int = 1
+    Callable_Tensor: int = 2
+
+
 # bind method
 def bind(
         transform_or_callable: Bind_Transform_Or_Callable_Input_Type,
-        callable_func: Optional[bool] = False,
-        callable_type: Optional[str] = "np.ndarray"
+        bind_type: int = BindEnum.Transform,
 ) -> Bind_Transform_Output_Type:
     """
-    :param transform_or_callable some custom transform from torchvision and albumentations,
+    :param transform_or_callable: some custom transform from torchvision and albumentations,
            or some custom transform callable functions defined by users.
-    :param callable_func indicates the transform is a func or not.
-    :param callable_type only use when bind a callable function.
+    :param bind_type: See BindEnum.
     """
-    if not callable_func:
+    if bind_type == BindEnum.Transform:
         # bind torchvision transform
         if isinstance(transform_or_callable, TorchVision_Transform_Type):
             return BindTorchVisionTransform(transform_or_callable)
@@ -430,11 +436,12 @@ def bind(
             return BindAlbumentationsTransform(transform_or_callable)
         else:
             raise TypeError(f"not supported: {transform_or_callable}")
-    else:
-        if callable_type != "np.ndarray":
-            return BindTensorCallable(transform_or_callable)
-
+    elif bind_type == BindEnum.Callable_Tensor:
+        return BindTensorCallable(transform_or_callable)
+    elif bind_type == BindEnum.Callable_Array:
         return BindArrayCallable(transform_or_callable)
+    else:
+        raise TypeError(f"not supported: {transform_or_callable}")
 
 
 # Pytorch Style Compose
@@ -651,7 +658,7 @@ class LandmarksResize(LandmarksTransform):
         new_img = self._letterbox_image_func(img.copy().astype(np.uint8), self._size)
 
         num_landmarks = len(landmarks)
-        landmark_bboxes = F.landmarks_tool.project_to_bboxes(landmarks)
+        landmark_bboxes = F.helper.to_bboxes(landmarks)
 
         if self._keep_aspect:
             scale = min(self._size[1] / h, self._size[0] / w)
@@ -669,9 +676,9 @@ class LandmarksResize(LandmarksTransform):
 
             landmark_bboxes[:, :4] += add_matrix
             # refine according to new shape
-            new_landmarks = F.landmarks_tool.reproject_to_landmarks(landmark_bboxes,
-                                                                    img_w=new_img.shape[1],
-                                                                    img_h=new_img.shape[0])
+            new_landmarks = F.helper.to_landmarks(landmark_bboxes,
+                                                  img_w=new_img.shape[1],
+                                                  img_h=new_img.shape[0])
 
             self.scale_x = scale
             self.scale_y = scale
@@ -681,15 +688,15 @@ class LandmarksResize(LandmarksTransform):
             landmark_bboxes[:, (1, 3)] *= scale_y
 
             # refine according to new shape
-            new_landmarks = F.landmarks_tool.reproject_to_landmarks(landmark_bboxes,
-                                                                    img_w=new_img.shape[1],
-                                                                    img_h=new_img.shape[0])
+            new_landmarks = F.helper.to_landmarks(landmark_bboxes,
+                                                  img_w=new_img.shape[1],
+                                                  img_h=new_img.shape[0])
             self.scale_x = scale_x
             self.scale_y = scale_y
 
         if len(new_landmarks) != num_landmarks:
-            raise F.LandmarkMissError('LandmarksResize: {0} input landmarks, but got {1} output '
-                                      'landmarks'.format(num_landmarks, len(new_landmarks)))
+            raise F.Error('LandmarksResize: {0} input landmarks, but got {1} output '
+                          'landmarks'.format(num_landmarks, len(new_landmarks)))
 
         self.flag = True
 
@@ -772,15 +779,14 @@ class LandmarksClip(LandmarksTransform):
 
 
 class LandmarksAlign(LandmarksTransform):
-    """Get alignment image and landmarks"""
+    """Get aligned image and landmarks"""
 
     def __init__(
             self,
             eyes_index: Union[Tuple[int, int], List[int]] = None
     ):
         """
-        :param eyes_index: 2 indexes in landmarks,
-            which indicates left and right eye center.
+        :param eyes_index: 2 indexes in landmarks, indicates left and right eye center.
         """
         super(LandmarksAlign, self).__init__()
         if eyes_index is None or len(eyes_index) != 2:
@@ -796,14 +802,14 @@ class LandmarksAlign(LandmarksTransform):
             landmarks: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
 
-        left_eye = landmarks[self._eyes_index[0]]  # left eye
-        right_eye = landmarks[self._eyes_index[1]]  # right eye
-        dx = (right_eye[0] - left_eye[0])  # right - left
+        left_eye = landmarks[self._eyes_index[0]]
+        right_eye = landmarks[self._eyes_index[1]]
+        dx = (right_eye[0] - left_eye[0])
         dy = (right_eye[1] - left_eye[1])
-        angle = math.atan2(dy, dx) * 180 / math.pi  # 计算角度
+        angle = math.atan2(dy, dx) * 180 / math.pi  # calc angle
 
         num_landmarks = len(landmarks)
-        landmark_bboxes = F.landmarks_tool.project_to_bboxes(landmarks)
+        landmark_bboxes = F.helper.to_bboxes(landmarks)
 
         w, h = img.shape[1], img.shape[0]
         cx, cy = w // 2, h // 2
@@ -832,16 +838,97 @@ class LandmarksAlign(LandmarksTransform):
 
         landmark_bboxes = F.clip_box(landmark_bboxes, [0, 0, w, h], 0.0025)
         # refine according to new shape
-        new_landmarks = F.landmarks_tool.reproject_to_landmarks(landmark_bboxes,
-                                                                img_w=new_img.shape[1],
-                                                                img_h=new_img.shape[0])
+        new_landmarks = F.helper.to_landmarks(landmark_bboxes,
+                                              img_w=new_img.shape[1],
+                                              img_h=new_img.shape[0])
 
         self.scale_x = (1 / scale_factor_x)
         self.scale_y = (1 / scale_factor_y)
 
         if len(new_landmarks) != num_landmarks:
-            raise F.LandmarkMissError('LandmarksAlign: {0} input landmarks, but got {1} output '
-                                      'landmarks'.format(num_landmarks, len(new_landmarks)))
+            raise F.Error('LandmarksAlign: {0} input landmarks, but got {1} output '
+                          'landmarks'.format(num_landmarks, len(new_landmarks)))
+
+        self.flag = True
+
+        return new_img.astype(np.uint8), new_landmarks.astype(np.float32)
+
+
+class LandmarksRandomAlign(LandmarksTransform):
+
+    def __init__(
+            self,
+            eyes_index: Union[Tuple[int, int], List[int]] = None,
+            prob: float = 0.5
+    ):
+        """
+        :param eyes_index: 2 indexes in landmarks, indicates left and right eye center.
+        """
+        super(LandmarksRandomAlign, self).__init__()
+        if eyes_index is None or len(eyes_index) != 2:
+            raise ValueError("2 indexes in landmarks, "
+                             "which indicates left and right eye center.")
+
+        self._eyes_index = eyes_index
+        self._prob = prob
+
+    @autodtype(AutoDtypeEnum.Array_InOut)
+    def __call__(
+            self,
+            img: np.ndarray,
+            landmarks: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
+
+        if np.random.uniform(0., 1.0) > self._prob:
+            self.clear_affine()
+            return img.astype(np.uint8), landmarks.astype(np.float32)
+
+        left_eye = landmarks[self._eyes_index[0]]
+        right_eye = landmarks[self._eyes_index[1]]
+        dx = (right_eye[0] - left_eye[0])
+        dy = (right_eye[1] - left_eye[1])
+        angle = math.atan2(dy, dx) * 180 / math.pi  # calc angle
+
+        num_landmarks = len(landmarks)
+        landmark_bboxes = F.helper.to_bboxes(landmarks)
+
+        w, h = img.shape[1], img.shape[0]
+        cx, cy = w // 2, h // 2
+
+        new_img = F.rotate_im(img.copy(), angle)
+
+        landmarks_corners = F.get_corners(landmark_bboxes)
+
+        landmarks_corners = np.hstack((landmarks_corners, landmark_bboxes[:, 4:]))
+
+        landmarks_corners[:, :8] = F.rotate_box(landmarks_corners[:, :8], angle, cx, cy, h, w)
+
+        new_landmark_bbox = np.zeros_like(landmark_bboxes)
+        new_landmark_bbox[:, [0, 1]] = landmarks_corners[:, [0, 1]]
+        new_landmark_bbox[:, [2, 3]] = landmarks_corners[:, [6, 7]]
+
+        scale_factor_x = new_img.shape[1] / w
+
+        scale_factor_y = new_img.shape[0] / h
+
+        new_img = cv2.resize(new_img, (w, h))
+
+        new_landmark_bbox[:, :4] /= [scale_factor_x, scale_factor_y, scale_factor_x, scale_factor_y]
+
+        landmark_bboxes = new_landmark_bbox[:, :]
+
+        landmark_bboxes = F.clip_box(landmark_bboxes, [0, 0, w, h], 0.0025)
+        # refine according to new shape
+        new_landmarks = F.helper.to_landmarks(landmark_bboxes,
+                                              img_w=new_img.shape[1],
+                                              img_h=new_img.shape[0])
+
+        self.scale_x = (1 / scale_factor_x)
+        self.scale_y = (1 / scale_factor_y)
+
+        if len(new_landmarks) != num_landmarks:
+            raise F.Error('LandmarksAlign: {0} input landmarks, but got {1} output '
+                          'landmarks'.format(num_landmarks, len(new_landmarks)))
 
         self.flag = True
 
@@ -882,7 +969,6 @@ class LandmarksRandomCenterCrop(LandmarksTransform):
 
         height_ratio = np.random.uniform(self._height_range[0], self._height_range[1], size=1)
         width_ratio = np.random.uniform(self._width_range[0], self._width_range[1], size=1)
-        # 四周是随机的 不是均匀的 可能左宽右窄 也可能上宽下窄 随机
         top_height_ratio = np.random.uniform(0.4, 0.6)
         left_width_ratio = np.random.uniform(0.4, 0.6)
 
@@ -911,7 +997,7 @@ class LandmarksRandomCenterCrop(LandmarksTransform):
         new_landmarks[:, 0] -= x1
         new_landmarks[:, 1] -= y1
 
-        # 点位越界检查
+        # border check
         lx_min = np.min(new_landmarks[:, 0])
         lx_max = np.max(new_landmarks[:, 0])
         ly_min = np.min(new_landmarks[:, 1])
@@ -928,7 +1014,12 @@ class LandmarksRandomCenterCrop(LandmarksTransform):
 
 
 class LandmarksRandomHorizontalFlip(LandmarksTransform):
-    """Randomly horizontally flips the Image with the probability *prob*
+    """WARNING: HorizontalFlip augmentation mirrors the input image. When you apply
+     that augmentation to keypoints that mark the side of body parts (left or right),
+     those keypoints will point to the wrong side (since left on the mirrored image
+     becomes right). So when you are creating an augmentation pipeline look carefully
+     which augmentations could be applied to the input data. Also see:
+     https://albumentations.ai/docs/getting_started/keypoints_augmentation/
     """
 
     def __init__(
@@ -956,8 +1047,9 @@ class LandmarksRandomHorizontalFlip(LandmarksTransform):
         h, w, _ = img.shape
         cx = float(w / 2)
         new_img = img[:, ::-1, :].copy()
-        # TODO: 点位的索引位置也需要进行相应的改变
-        # 若x1<cx，则x1_flip=x1+2*(cx-x1)；若x1>cx，x1_flip=x1-2*(x1-cx)=x1+2*(cx-x1)
+        # TODO: swap the index according the transform
+        # if x1<cx，then x1_flip=x1+2*(cx-x1), else if x1>cx，
+        # then x1_flip=x1-2*(x1-cx)=x1+2*(cx-x1)
         new_landmarks = landmarks.copy()
         new_landmarks[:, 0] += 2 * (cx - new_landmarks[:, 0])
 
@@ -967,7 +1059,12 @@ class LandmarksRandomHorizontalFlip(LandmarksTransform):
 
 
 class LandmarksHorizontalFlip(LandmarksTransform):
-    """Randomly horizontally flips the Image
+    """WARNING: HorizontalFlip augmentation mirrors the input image. When you apply
+     that augmentation to keypoints that mark the side of body parts (left or right),
+     those keypoints will point to the wrong side (since left on the mirrored image
+     becomes right). So when you are creating an augmentation pipeline look carefully
+     which augmentations could be applied to the input data. Also see:
+     https://albumentations.ai/docs/getting_started/keypoints_augmentation/
     """
 
     def __init__(self):
@@ -982,8 +1079,9 @@ class LandmarksHorizontalFlip(LandmarksTransform):
         h, w, _ = img.shape
         cx = float(w / 2)
         new_img = img[:, ::-1, :].copy()
-        # TODO: 点位的索引位置也需要进行相应的改变
-        # 若x1<cx，则x1_flip=x1+2*(cx-x1)；若x1>cx，x1_flip=x1-2*(x1-cx)=x1+2*(cx-x1)
+        # TODO: swap the index according the transform
+        # if x1<cx，then x1_flip=x1+2*(cx-x1), else if x1>cx，
+        # then x1_flip=x1-2*(x1-cx)=x1+2*(cx-x1)
         new_landmarks = landmarks.copy()
         new_landmarks[:, 0] += 2 * (cx - new_landmarks[:, 0])
 
@@ -1050,8 +1148,8 @@ class LandmarksRandomScale(LandmarksTransform):
         self.scale_y = resize_scale_y
 
         if len(new_landmarks) != num_landmarks:
-            raise F.LandmarkMissError('LandmarksRandomScale: {0} input landmarks, but got {1} output '
-                                      'landmarks'.format(num_landmarks, len(new_landmarks)))
+            raise F.Error('LandmarksRandomScale: {0} input landmarks, but got {1} output '
+                          'landmarks'.format(num_landmarks, len(new_landmarks)))
 
         self.flag = True
 
@@ -1106,7 +1204,7 @@ class LandmarksRandomTranslate(LandmarksTransform):
         # Chose a random digit to scale by
         img_shape = img.shape
         num_landmarks = len(landmarks)
-        landmark_bboxes = F.landmarks_tool.project_to_bboxes(landmarks)
+        landmark_bboxes = F.helper.to_bboxes(landmarks)
         # translate the image
 
         # percentage of the dimension of the image to translate
@@ -1136,15 +1234,13 @@ class LandmarksRandomTranslate(LandmarksTransform):
 
         landmark_bboxes = F.clip_box(landmark_bboxes, [0, 0, img_shape[1], img_shape[0]], 0.0025)
         # refine according to new shape
-        new_landmarks = F.landmarks_tool.reproject_to_landmarks(landmark_bboxes,
-                                                                img_w=new_img.shape[1],
-                                                                img_h=new_img.shape[0])
+        new_landmarks = F.helper.to_landmarks(landmark_bboxes,
+                                              img_w=new_img.shape[1],
+                                              img_h=new_img.shape[0])
 
         if len(new_landmarks) != num_landmarks:
-            raise F.LandmarkMissError(
-                'LandmarksRandomTranslate: {0} input landmarks, but got {1} output '
-                'landmarks'.format(num_landmarks, len(new_landmarks))
-            )
+            raise F.Error('LandmarksRandomTranslate: {0} input landmarks, but got {1} '
+                          'output landmarks'.format(num_landmarks, len(new_landmarks)))
 
         # TODO: add translate affine records
         self.flag = True
@@ -1195,7 +1291,7 @@ class LandmarksRandomRotate(LandmarksTransform):
 
         angle = np.random.choice(self.choose_angles)
         num_landmarks = len(landmarks)
-        landmark_bboxes = F.landmarks_tool.project_to_bboxes(landmarks)
+        landmark_bboxes = F.helper.to_bboxes(landmarks)
 
         w, h = img.shape[1], img.shape[0]
         cx, cy = w // 2, h // 2
@@ -1224,14 +1320,14 @@ class LandmarksRandomRotate(LandmarksTransform):
 
         landmark_bboxes = F.clip_box(landmark_bboxes, [0, 0, w, h], 0.0025)
         # refine according to new shape
-        new_landmarks = F.landmarks_tool.reproject_to_landmarks(landmark_bboxes,
-                                                                img_w=new_img.shape[1],
-                                                                img_h=new_img.shape[0])
+        new_landmarks = F.helper.to_landmarks(landmark_bboxes,
+                                              img_w=new_img.shape[1],
+                                              img_h=new_img.shape[0])
         self.scale_x = (1 / scale_factor_x)
         self.scale_y = (1 / scale_factor_y)
 
         if len(new_landmarks) != num_landmarks:
-            raise F.LandmarkMissError(
+            raise F.Error(
                 'LandmarksRandomRotate: {0} input landmarks, but got {1} output '
                 'landmarks'.format(num_landmarks, len(new_landmarks))
             )
@@ -1286,7 +1382,7 @@ class LandmarksRandomShear(LandmarksTransform):
         if shear_factor < 0:
             new_img, new_landmarks = LandmarksHorizontalFlip()(new_img, new_landmarks)
 
-        landmark_bboxes = F.landmarks_tool.project_to_bboxes(new_landmarks)
+        landmark_bboxes = F.helper.to_bboxes(new_landmarks)
 
         M = np.array([[1, abs(shear_factor), 0], [0, 1, 0]])
 
@@ -1295,27 +1391,27 @@ class LandmarksRandomShear(LandmarksTransform):
         landmark_bboxes[:, [0, 2]] += ((landmark_bboxes[:, [1, 3]]) * abs(shear_factor)).astype(int)
 
         new_img = cv2.warpAffine(new_img, M, (int(nW), new_img.shape[0]))
-        new_landmarks = F.landmarks_tool.reproject_to_landmarks(landmark_bboxes)
+        new_landmarks = F.helper.to_landmarks(landmark_bboxes)
 
         if shear_factor < 0:
             new_img, new_landmarks = LandmarksHorizontalFlip()(new_img, new_landmarks)
 
-        landmark_bboxes = F.landmarks_tool.project_to_bboxes(new_landmarks)
+        landmark_bboxes = F.helper.to_bboxes(new_landmarks)
         new_img = cv2.resize(new_img, (w, h))
 
         scale_factor_x = nW / w
 
         landmark_bboxes[:, :4] /= [scale_factor_x, 1, scale_factor_x, 1]
         # refine according to new shape
-        new_landmarks = F.landmarks_tool.reproject_to_landmarks(landmark_bboxes,
-                                                                img_w=new_img.shape[1],
-                                                                img_h=new_img.shape[0])
+        new_landmarks = F.helper.to_landmarks(landmark_bboxes,
+                                              img_w=new_img.shape[1],
+                                              img_h=new_img.shape[0])
 
         self.scale_x = (1. / scale_factor_x)
         self.scale_y = 1.
 
         if len(new_landmarks) != num_landmarks:
-            raise F.LandmarkMissError(
+            raise F.Error(
                 'LandmarksRandomShear: {0} input landmarks, but got {1} output '
                 'landmarks'.format(num_landmarks, len(new_landmarks))
             )
@@ -1407,10 +1503,7 @@ class LandmarksRandomHSV(LandmarksTransform):
 
 
 class LandmarksRandomMask(LandmarksTransform):
-    """Implement of Random-Mask data augment for performance improving
-    of the occlusion object in landmarks-detection."""
 
-    # Note: 需要考虑Mask对点位可见性的影响，被mask的区域点位不可见
     def __init__(
             self,
             mask_ratio: float = 0.25,
@@ -1419,7 +1512,7 @@ class LandmarksRandomMask(LandmarksTransform):
     ):
         """random select a mask ratio.
         :param mask_ratio: control the ratio of area to mask, must >= 0.1.
-        :param prob:
+        :param prob: probability
         :param trans_ratio: control the random shape of masked area.
         """
         super(LandmarksRandomMask, self).__init__()
@@ -1440,19 +1533,74 @@ class LandmarksRandomMask(LandmarksTransform):
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
         w, h = img.shape[1], img.shape[0]  # original shape
-        # 被mask的面积是随机的
+        # random ratios
         mask_ratio = np.random.uniform(0.05, self._mask_ratio, size=1)
         mask_ratio = np.sqrt(mask_ratio)
         mask_h, mask_w = int(h * mask_ratio), int(w * mask_ratio)
         delta = mask_h * mask_w
-        # 被mask的形状是随机的
+        # random rectangles
         down_w = max(2, int(mask_w * self._trans_ratio))
         up_w = min(int(mask_w * (1 + self._trans_ratio)), w - 2)
         new_mask_w = np.random.randint(min(down_w, up_w), max(down_w, up_w))
         new_mask_h = int(delta / new_mask_w)
 
-        # 被mask的位置是随机的
-        new_img, mask_corner = F.random_mask_img(img.copy(), new_mask_w, new_mask_h)
+        # random positions
+        new_img, mask_corner = F.apply_mask(img, new_mask_w, new_mask_h)
+
+        self.flag = True
+
+        return new_img.astype(np.uint8), landmarks.astype(np.float32)
+
+
+class LandmarksRandomMaskWithAlpha(LandmarksTransform):
+
+    def __init__(
+            self,
+            mask_ratio: float = 0.25,
+            prob: float = 0.5,
+            trans_ratio: float = 0.5,
+            alpha: float = 0.9
+    ):
+        """random select a mask ratio.
+        :param mask_ratio: control the ratio of area to mask, must >= 0.1.
+        :param prob: probability
+        :param trans_ratio: control the random shape of masked area.
+        :param alpha: max alpha value.
+        """
+        super(LandmarksRandomMaskWithAlpha, self).__init__()
+        assert 0.10 < mask_ratio < 1.
+        assert 0 < trans_ratio < 1.
+        self._mask_ratio = mask_ratio
+        self._trans_ratio = trans_ratio
+        self._prob = prob
+        self._alpha = alpha
+        assert 0. <= alpha <= 1.0
+
+    @autodtype(AutoDtypeEnum.Array_InOut)
+    def __call__(
+            self,
+            img: np.ndarray,
+            landmarks: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        if np.random.uniform(0., 1.0) > self._prob:
+            self.clear_affine()
+            return img.astype(np.uint8), landmarks.astype(np.float32)
+
+        w, h = img.shape[1], img.shape[0]  # original shape
+        # random ratios
+        mask_ratio = np.random.uniform(0.05, self._mask_ratio, size=1)
+        mask_ratio = np.sqrt(mask_ratio)
+        mask_h, mask_w = int(h * mask_ratio), int(w * mask_ratio)
+        delta = mask_h * mask_w
+        # random rectangles
+        down_w = max(2, int(mask_w * self._trans_ratio))
+        up_w = min(int(mask_w * (1 + self._trans_ratio)), w - 2)
+        new_mask_w = np.random.randint(min(down_w, up_w), max(down_w, up_w))
+        new_mask_h = int(delta / new_mask_w)
+
+        # random positions
+        alpha = np.random.uniform(0.1, self._alpha)
+        new_img, mask_corner = F.apply_mask_with_alpha(img, new_mask_w, new_mask_h, alpha)
 
         self.flag = True
 
@@ -1550,20 +1698,18 @@ class LandmarksRandomBrightness(LandmarksTransform):
 
 
 class LandmarksRandomPatches(LandmarksTransform):
-    """Implement of Random-Patch data augment for performance improving
-    of the occlusion object in landmarks-detection. 从随机选择的图片上
-    随机crop一块, 对输入的人脸图片进行patch，模拟人脸被物体的遮挡. 该方法直接
-    没有使用Alpha进行融合. Alpha融合需要获取遮挡物的mask，或者直接使用addWeighted"""
 
     def __init__(
             self,
+            patch_dirs: List[str],
             patch_ratio: float = 0.15,
             prob: float = 0.5,
             trans_ratio: float = 0.5
     ):
         """random select a patch ratio.
+        :param patch_dirs: paths to patches images dirs, ["xxx/xx", "xxx/xx"]
         :param patch_ratio: control the ratio of area to patch, must >= 0.1.
-        :param prob:
+        :param prob: probability
         :param trans_ratio: control the random shape of patched area.
         """
         super(LandmarksRandomPatches, self).__init__()
@@ -1572,16 +1718,7 @@ class LandmarksRandomPatches(LandmarksTransform):
         self._patch_ratio = patch_ratio
         self._trans_ratio = trans_ratio
         self._prob = prob
-        self._patches_paths = []
-        self._patches_root = Path(__file__).parent
-        self._patches_dirs = [
-            os.path.join(self._patches_root, "patches/hands"),  # 手掌
-            os.path.join(self._patches_root, "patches/hats"),  # 帽子
-            os.path.join(self._patches_root, "patches/clothes"),  # 衣服
-            os.path.join(self._patches_root, "patches/masks"),  # 口罩
-            os.path.join(self._patches_root, "patches/others")  # 其他背景
-        ]
-        self._init_patches_paths()
+        self._patches_paths = F.read_image_files(patch_dirs)
 
     @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
@@ -1595,96 +1732,44 @@ class LandmarksRandomPatches(LandmarksTransform):
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
         w, h = img.shape[1], img.shape[0]  # original shape
-        # 被patch的面积是随机的
+        # random patch ratios
         patch_ratio = np.random.uniform(0.05, self._patch_ratio, size=1)
         patch_ratio = np.sqrt(patch_ratio)
         patch_h, patch_w = int(h * patch_ratio), int(w * patch_ratio)
         delta = patch_h * patch_w
-        # 被patch的形状是随机的矩形
+        # random patch rectangles
         down_w = max(2, int(patch_w * self._trans_ratio))
         up_w = min(int(patch_w * (1 + self._trans_ratio)), w - 2)
         new_patch_w = np.random.randint(min(down_w, up_w), max(down_w, up_w))
         new_patch_h = int(delta / new_patch_w)
 
-        # 被patch的位置是随机的
-        patch = self._random_select_patch(patch_h=new_patch_h, patch_w=new_patch_w)
+        # random patch positions
+        patch = F.select_patch(patch_h=new_patch_h, patch_w=new_patch_w,
+                               patches_paths=self._patches_paths)
         if patch is None:
             self.flag = True
             img.astype(np.uint8), landmarks.astype(np.float32)
 
-        new_img, patch_corner = self._random_patch_img(img=img, patch=patch)
+        new_img, patch_corner = F.apply_patch(img=img, patch=patch)
         self.flag = True
 
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
-    def _init_patches_paths(self):
-        self._patches_paths.clear()
-        for d in self._patches_dirs:
-            files = [x for x in os.listdir(d) if
-                     any((x.lower().endswith("jpeg"),
-                          x.lower().endswith("jpg"),
-                          x.lower().endswith("png")))]
-
-            paths = [os.path.join(d, x) for x in files]
-            self._patches_paths.extend(paths)
-
-    def _random_select_patch(
-            self,
-            patch_h: int = 32,
-            patch_w: int = 32
-    ) -> Union[np.ndarray, None]:
-
-        patch_path = np.random.choice(self._patches_paths)
-        patch_img = cv2.imread(patch_path)
-        if patch_img is None:
-            return None
-        h, w, _ = patch_img.shape
-        if h <= patch_h or w <= patch_w:
-            patch = cv2.resize(patch_img, (patch_w, patch_h))
-            return patch
-        x1 = np.random.randint(0, w - patch_w + 1)
-        y1 = np.random.randint(0, h - patch_h + 1)
-        x2 = x1 + patch_w
-        y2 = y1 + patch_h
-        patch = patch_img[y1:y2, x1:x2, :]
-
-        return patch
-
-    @staticmethod
-    def _random_patch_img(
-            img: np.ndarray,
-            patch: np.ndarray
-    ) -> Tuple[np.ndarray, List[int]]:
-        h, w, c = img.shape
-        patch_h, patch_w, _ = patch.shape
-        patch_w = min(max(0., patch_w), w)
-        patch_h = min(max(0., patch_h), h)
-        x0 = np.random.randint(0, w - patch_w + 1)
-        y0 = np.random.randint(0, h - patch_h + 1)
-        x1, y1 = int(x0 + patch_w), int(y0 + patch_h)
-        x0, y0 = max(x0, 0), max(y0, 0)
-        x1, y1 = min(x1, w), min(y1, h)
-        img[y0:y1, x0:x1, :] = patch[:, :, :]
-        patch_corner = [x0, y0, x1, y1]
-
-        return img.astype(np.uint8), patch_corner
-
 
 class LandmarksRandomPatchesWithAlpha(LandmarksTransform):
-    """Implement of Random-Patch data augment for performance improving
-    of the occlusion object in landmarks-detection. 从随机选择的图片上
-    随机crop一块, 对输入的人脸图片进行patch，模拟人脸被物体的遮挡."""
 
     def __init__(
             self,
+            patch_dirs: List[str],
             patch_ratio: float = 0.2,
             prob: float = 0.5,
             trans_ratio: float = 0.5,
             alpha: float = 0.9
     ):
         """random select a patch ratio.
+        :param patch_dirs: paths to patches images dirs, ["xxx/xx", "xxx/xx"]
         :param patch_ratio: control the ratio of area to patch, must >= 0.1.
-        :param prob:
+        :param prob: probability
         :param trans_ratio: control the random shape of patched area.
         :param alpha: max alpha value.
         """
@@ -1696,16 +1781,7 @@ class LandmarksRandomPatchesWithAlpha(LandmarksTransform):
         self._prob = prob
         self._alpha = alpha
         assert 0. <= alpha <= 1.0
-        self._patches_paths = []
-        self._patches_root = Path(__file__).parent
-        self._patches_dirs = [
-            os.path.join(self._patches_root, "patches/hands"),  # 手掌
-            os.path.join(self._patches_root, "patches/hats"),  # 帽子
-            os.path.join(self._patches_root, "patches/clothes"),  # 衣服
-            os.path.join(self._patches_root, "patches/masks"),  # 口罩
-            os.path.join(self._patches_root, "patches/others")  # 其他背景
-        ]
-        self._init_patches_paths()
+        self._patches_paths = F.read_image_files(patch_dirs)
 
     @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
@@ -1719,113 +1795,50 @@ class LandmarksRandomPatchesWithAlpha(LandmarksTransform):
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
         w, h = img.shape[1], img.shape[0]  # original shape
-        # 被patch的面积是随机的
+        # random patch ratios
         patch_ratio = np.random.uniform(0.05, self._patch_ratio, size=1)
         patch_ratio = np.sqrt(patch_ratio)
         patch_h, patch_w = int(h * patch_ratio), int(w * patch_ratio)
         delta = patch_h * patch_w
-        # 被patch的形状是随机的矩形
+        # random patch rectangles
         down_w = max(2, int(patch_w * self._trans_ratio))
         up_w = min(int(patch_w * (1 + self._trans_ratio)), w - 2)
         new_patch_w = np.random.randint(min(down_w, up_w), max(down_w, up_w))
         new_patch_h = int(delta / new_patch_w)
 
-        # 被patch的位置是随机的
-        patch = self._random_select_patch(patch_h=new_patch_h, patch_w=new_patch_w)
+        # random patch positions
+        patch = F.select_patch(patch_h=new_patch_h, patch_w=new_patch_w,
+                               patches_paths=self._patches_paths)
         if patch is None:
             self.flag = True
             img.astype(np.uint8), landmarks.astype(np.float32)
 
         alpha = np.random.uniform(0.1, self._alpha)
-        new_img, patch_corner = self._random_patch_img_with_alpha(img=img, patch=patch, alpha=alpha)
+        new_img, patch_corner = F.apply_patch_with_alpha(img=img, patch=patch, alpha=alpha)
 
         self.flag = True
 
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
-    def _init_patches_paths(self):
-        self._patches_paths.clear()
-        for d in self._patches_dirs:
-            files = [x for x in os.listdir(d) if
-                     any((x.lower().endswith("jpeg"),
-                          x.lower().endswith("jpg"),
-                          x.lower().endswith("png")))]
-
-            paths = [os.path.join(d, x) for x in files]
-            self._patches_paths.extend(paths)
-
-    def _random_select_patch(
-            self,
-            patch_h: int = 32,
-            patch_w: int = 32
-    ) -> Union[np.ndarray, None]:
-        patch_path = np.random.choice(self._patches_paths)
-        patch_img = cv2.imread(patch_path)
-        if patch_img is None:
-            return None
-        h, w, _ = patch_img.shape
-        if h <= patch_h or w <= patch_w:
-            patch = cv2.resize(patch_img, (patch_w, patch_h))
-            return patch
-        x1 = np.random.randint(0, w - patch_w + 1)
-        y1 = np.random.randint(0, h - patch_h + 1)
-        x2 = x1 + patch_w
-        y2 = y1 + patch_h
-        patch = patch_img[y1:y2, x1:x2, :]
-
-        return patch
-
-    @staticmethod
-    def _random_patch_img_with_alpha(
-            img: np.ndarray,
-            patch: np.ndarray,
-            alpha: float = 0.5
-    ) -> Tuple[np.ndarray, List[int]]:
-        """对patch根据alpha进行融合 后期可以考虑换分割或matting得到的mask/alpha matte"""
-        h, w, c = img.shape
-        patch_h, patch_w, _ = patch.shape
-        patch_w = min(max(0., patch_w), w)
-        patch_h = min(max(0., patch_h), h)
-        x0 = np.random.randint(0, w - patch_w + 1)
-        y0 = np.random.randint(0, h - patch_h + 1)
-        x1, y1 = int(x0 + patch_w), int(y0 + patch_h)
-        x0, y0 = max(x0, 0), max(y0, 0)
-        x1, y1 = min(x1, w), min(y1, h)
-        img_patch = img[y0:y1, x0:x1, :].copy()
-        # 对patch 进行 alpha 融合
-        fuse_patch = cv2.addWeighted(patch, alpha, img_patch, 1. - alpha, 0)
-        img[y0:y1, x0:x1, :] = fuse_patch[:, :, :]
-        patch_corner = [x0, y0, x1, y1]
-
-        return img.astype(np.uint8), patch_corner
-
 
 class LandmarksRandomBackgroundWithAlpha(LandmarksTransform):
-    """Implement of Random-Patch data augment for performance improving
-    of the occlusion object in landmarks-detection. 从随机选择的图片上
-    随机crop一块, 对输入的人脸图片进行patch，模拟人脸被物体的遮挡."""
 
     def __init__(
             self,
+            background_dirs: List[str],
             alpha: float = 0.3,
             prob: float = 0.5
     ):
-        """random select a patch ratio.
-        :param prob:
+        """
+        :param background_dirs: paths to background images dirs, ["xxx/xx", "xxx/xx"]
+        :param prob: probability
         :param alpha: max alpha value(<=0.5)
         """
         super(LandmarksRandomBackgroundWithAlpha, self).__init__()
         self._prob = prob
         self._alpha = alpha
         assert 0.1 < alpha <= 0.5
-        self._background_paths = []
-        self._background_root = Path(__file__).parent
-        self._background_dirs = [
-            os.path.join(self._background_root, "patches/hats"),  # 帽子
-            os.path.join(self._background_root, "patches/clothes"),  # 衣服
-            os.path.join(self._background_root, "patches/others")  # 其他背景
-        ]
-        self._init_background_paths()
+        self._background_paths = F.read_image_files(background_dirs)
 
     @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
@@ -1841,70 +1854,64 @@ class LandmarksRandomBackgroundWithAlpha(LandmarksTransform):
         w, h = img.shape[1], img.shape[0]  # original shape
 
         alpha = np.random.uniform(0.1, self._alpha)
-        background = self._random_select_background(img_h=h, img_w=w)
+        background = F.select_background(
+            img_h=h, img_w=w,
+            background_paths=self._background_paths
+        )
+
         if background is None:
             self.flag = True
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
-        new_img = self._random_background_img_with_alpha(img=img, background=background, alpha=alpha)
+        new_img = F.apply_background_with_alpha(img=img, background=background, alpha=alpha)
 
         self.flag = True
 
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
-    def _init_background_paths(self):
-        self._background_paths.clear()
-        for d in self._background_dirs:
-            files = [x for x in os.listdir(d) if
-                     any((x.lower().endswith("jpeg"),
-                          x.lower().endswith("jpg"),
-                          x.lower().endswith("png")))]
 
-            paths = [os.path.join(d, x) for x in files]
-            self._background_paths.extend(paths)
+class LandmarksRandomBackground(LandmarksTransform):
 
-    def _random_select_background(
+    def __init__(
             self,
-            img_h: int = 128,
-            img_w: int = 128
-    ) -> Union[np.ndarray, None]:
+            background_dirs: List[str],
+            alpha: float = 0.3,
+            prob: float = 0.5
+    ):
+        """
+        :param background_dirs: paths to background images dirs, ["xxx/xx", "xxx/xx"]
+        :param prob: probability
+        """
+        super(LandmarksRandomBackground, self).__init__()
+        self._prob = prob
+        self._alpha = alpha
+        assert 0.1 < alpha <= 0.5
+        self._background_paths = F.read_image_files(background_dirs)
 
-        background_path = np.random.choice(self._background_paths)
-        background_img = cv2.imread(background_path)
-        if background_img is None:
-            return None
-        h, w, _ = background_img.shape
-        if h <= img_h or w <= img_w:
-            background = cv2.resize(background_img, (img_w, img_h))
-            return background
-        # 随机挑一个起点
-        x1 = np.random.randint(0, w - img_w + 1)
-        y1 = np.random.randint(0, h - img_h + 1)
-        # 随机挑一个宽高
-        nw = np.random.randint(img_w // 2, img_w)
-        nh = np.random.randint(img_h // 2, img_h)
-        x2 = x1 + nw
-        y2 = y1 + nh
-        background = background_img[y1:y2, x1:x2, :]
-
-        # 确保和图片的大小一致
-        if nh != img_h or nw != img_w:
-            background = cv2.resize(background, (img_w, img_h))
-            return background
-
-        return background
-
-    @staticmethod
-    def _random_background_img_with_alpha(
+    @autodtype(AutoDtypeEnum.Array_InOut)
+    def __call__(
+            self,
             img: np.ndarray,
-            background: np.ndarray,
-            alpha: float = 0.5) -> np.ndarray:
-        """对patch根据alpha进行融合 后期可以考虑换分割或matting得到的mask/alpha matte"""
-        h, w, c = img.shape
-        b_h, b_w, _ = background.shape
-        if b_h != h or b_w != w:
-            background = cv2.resize(background, (w, h))
-        # 对背景 进行 alpha 融合
-        img = cv2.addWeighted(background, alpha, img, 1. - alpha, 0)
+            landmarks: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
 
-        return img.astype(np.uint8)
+        if np.random.uniform(0., 1.0) > self._prob:
+            self.clear_affine()
+            return img.astype(np.uint8), landmarks.astype(np.float32)
+
+        w, h = img.shape[1], img.shape[0]  # original shape
+
+        background = F.select_background(
+            img_h=h, img_w=w,
+            background_paths=self._background_paths
+        )
+
+        if background is None:
+            self.flag = True
+            return img.astype(np.uint8), landmarks.astype(np.float32)
+
+        new_img = F.apply_background(img=img, background=background)
+
+        self.flag = True
+
+        return new_img.astype(np.uint8), landmarks.astype(np.float32)
