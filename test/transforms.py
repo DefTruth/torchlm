@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 import torchvision
 import albumentations
-import matplotlib.pyplot as plt
 from torch import Tensor
 from typing import Tuple
+import matplotlib.pyplot as plt
 
 import torchlm
 
