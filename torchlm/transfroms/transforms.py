@@ -174,14 +174,12 @@ class BindTorchVisionTransform(LandmarksTransform):
         try:
             chw = img.size()[0] == 3
             if not chw:
-                print("permute((2, 0, 1)) ")
                 img = img.permute((2, 0, 1)).contiguous()
 
             img, landmarks = self.transform_internal(img), landmarks
 
             # permute back
             if not chw:
-                print("permute((1, 2, 0)) ")
                 img = img.permute((1, 2, 0)).contiguous()
 
             self.flag = True
