@@ -26,8 +26,14 @@ def callable_tensor_noop(
 
 
 def test_torchlm_transforms():
+
+    print(f"torchlm version: {torchlm.__version__}")
+    seed = np.random.randint(0, 1000)
+    np.random.seed(seed)
+
     img_path = "./1.jpg"
     anno_path = "./1.txt"
+    save_path = f"./logs/{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
         lm_info = fr.readlines()[0].strip('\n').split(' ')[1:]
@@ -78,6 +84,7 @@ def test_torchlm_transforms():
     new_img = torchlm.draw_landmarks(trans_img, trans_landmarks)
     plt.imshow(new_img)
     plt.show()
+    cv2.imwrite(save_path, new_img[:, :, ::-1])
     print("transformed landmarks: ", trans_landmarks.flatten().tolist())
     print("original    landmarks: ", landmarks.flatten().tolist())
 

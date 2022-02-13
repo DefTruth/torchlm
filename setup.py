@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.1.0",
     author="DefTruth",
     author_email="qyjdef@163.com",
-    description="A PyTorch landmarks-only library with 100+ data augmentation, training and inference.",
+    description="A PyTorch landmarks-only library with 100+ data augmentations, training and inference.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/DefTruth/torchlm",
