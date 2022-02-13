@@ -202,8 +202,11 @@ LandmarksUnNormalize() Execution Flag: True
 * [ ] TNN
 * [ ] ... 
 
-## 📖 License.
+## 📖 License 
 The code of torchlm is released under the MIT License.
+
+## 👋 Contributing
+If you like this project please consider ⭐ this repo, as it is the simplest way to support us.
 
 ## 🎓 Acknowledgement  
 The implementation of torchlm's transforms borrow the code from [Paperspace](ttps://github.com/Paperspace/DataAugmentationForObjectDetection/blob/master/data_aug/bbox_util.py).  
