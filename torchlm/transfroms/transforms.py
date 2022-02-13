@@ -7,7 +7,7 @@ import torchvision
 import albumentations
 from torch import Tensor
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Union, List, Optional, Callable
+from typing import Tuple, Union, List, Optional, Callable, Any
 
 from . import functional as F
 from .autodtypes import (
@@ -48,8 +48,23 @@ __all__ = [
     "BindArrayCallable",
     "BindTensorCallable",
     "BindEnum",
-    "bind"
+    "bind",
+    "set_transforms_logging",
+    "set_transforms_debug"
 ]
+
+TransformLoggingMode: bool = False
+TransformDebugMode: bool = False
+
+
+def set_transforms_logging(logging: bool = False):
+    global TransformLoggingMode
+    TransformLoggingMode = logging
+
+
+def set_transforms_debug(debug: bool = False):
+    global TransformDebugMode
+    TransformDebugMode = debug
 
 
 class LandmarksTransform(object):
@@ -81,7 +96,7 @@ class LandmarksTransform(object):
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + '()'
+        return self.__class__.__name__
 
     def apply_affine_to(
             self,
@@ -150,19 +165,33 @@ class BindTorchVisionTransform(LandmarksTransform):
     @autodtype(AutoDtypeEnum.Tensor_InOut)
     def __call__(
             self,
-            img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type
-    ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
+            img: Tensor,
+            landmarks: Tensor
+    ) -> Tuple[Tensor, Tensor]:
         # Image only transform from torchvision,
-        # just let the landmarks unchanged.
+        # just let the landmarks unchanged. Note (3,H,W)
+        # is need for torchvision
         try:
+            chw = img.size()[0] == 3
+            if not chw:
+                img = img.permute((2, 0, 1)).contiguous()
+
             img, landmarks = self.transform_internal(img), landmarks
+
+            # permute back
+            if not chw:
+                img = img.permute((1, 2, 0)).contiguous()
 
             self.flag = True
             return img, landmarks
         except:
             self.flag = False
             return img, landmarks
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + '(' \
+               + self.transform_internal.__class__.__name__ \
+               + '())'
 
 
 Albumentations_Transform_Type = Union[
@@ -262,8 +291,8 @@ class BindAlbumentationsTransform(LandmarksTransform):
         )), f"The transform from albumentations must be one of:" \
             f"\n{self._Supported_Image_Only_Transform_Set}, " \
             f"\n{self._Supported_Dual_Transform_Set}"
-
-        self.transform_internal = albumentations.Compose(
+        self.transform_internal = transform
+        self.compose_internal = albumentations.Compose(
             transforms=[transform],
             keypoint_params=albumentations.KeypointParams(
                 format="xy",
@@ -274,9 +303,9 @@ class BindAlbumentationsTransform(LandmarksTransform):
     @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
-            img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type
-    ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
+            img: np.ndarray,
+            landmarks: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         # The landmarks format for albumentations should be a list of lists(tuple)
         # in xy format by default. Such as:
         # keypoints = [
@@ -299,7 +328,7 @@ class BindAlbumentationsTransform(LandmarksTransform):
         kps_num = len(keypoints)
 
         try:
-            transformed = self.transform_internal(image=img, keypoints=keypoints)
+            transformed = self.compose_internal(image=img, keypoints=keypoints)
             trans_img = transformed['image']
             trans_kps = transformed['keypoints']
 
@@ -316,15 +345,20 @@ class BindAlbumentationsTransform(LandmarksTransform):
             self.flag = False
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + '(' \
+               + self.transform_internal.__class__.__name__ \
+               + '())'
+
 
 Callable_Array_Func_Type = Union[
     Callable[[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]],
-    Callable[[np.ndarray, np.ndarray, ...], Tuple[np.ndarray, np.ndarray]]
+    Callable[[np.ndarray, np.ndarray, Any], Tuple[np.ndarray, np.ndarray]]
 ]
 
 Callable_Tensor_Func_Type = Union[
     Callable[[Tensor, Tensor], Tuple[Tensor, Tensor]],
-    Callable[[Tensor, Tensor, ...], Tuple[Tensor, Tensor]]
+    Callable[[Tensor, Tensor, Any], Tuple[Tensor, Tensor]]
 ]
 
 
@@ -345,10 +379,10 @@ class BindArrayCallable(LandmarksTransform):
     @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
             self,
-            img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type,
+            img: np.ndarray,
+            landmarks: np.ndarray,
             **kwargs
-    ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         try:
             img, landmarks = self.call_func(img, landmarks, **kwargs)
 
@@ -359,6 +393,11 @@ class BindArrayCallable(LandmarksTransform):
 
             self.flag = False
             return img.astype(np.int32), landmarks.astype(np.float32)
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + '(' \
+               + self.call_func.__name__ \
+               + '())'
 
 
 class BindTensorCallable(LandmarksTransform):
@@ -378,10 +417,10 @@ class BindTensorCallable(LandmarksTransform):
     @autodtype(AutoDtypeEnum.Tensor_InOut)
     def __call__(
             self,
-            img: Image_InOutput_Type,
-            landmarks: Landmarks_InOutput_Type,
+            img: Tensor,
+            landmarks: Tensor,
             **kwargs
-    ) -> Tuple[Image_InOutput_Type, Landmarks_InOutput_Type]:
+    ) -> Tuple[Tensor, Tensor]:
         try:
             img, landmarks = self.call_func(img, landmarks, **kwargs)
 
@@ -391,6 +430,10 @@ class BindTensorCallable(LandmarksTransform):
             self.flag = False
             return img, landmarks
 
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + '(' \
+               + self.call_func.__name__ \
+               + '())'
 
 Bind_Transform_Or_Callable_Input_Type = Union[
     TorchVision_Transform_Type,
@@ -450,11 +493,13 @@ class LandmarksCompose(object):
     def __init__(
             self,
             transforms: List[LandmarksTransform],
-            logging: bool = False
+            logging: bool = False,
+            debug: bool = False
     ):
         self.flags: List[bool] = []
         self.transforms: List[LandmarksTransform] = transforms
         self.logging: bool = logging
+        self.debug: bool = debug
         assert self.check, "Wrong! Need LandmarksTransform !" \
                            f"But got {self.__repr__()}"
 
@@ -473,10 +518,16 @@ class LandmarksCompose(object):
             try:
                 img, landmarks = t(img, landmarks)
             except Exception as e:
-                if self.logging:
-                    print(f"Error at {t.__class__.__name__} Skip, "
-                          f"Flag: {t.flag} Info: {e}")
-                continue
+                if self.logging or TransformLoggingMode:
+                    print(f"Error at {t}() Skip, "
+                          f"Flag: {t.flag} Error Info: {e}")
+                    if self.debug or TransformDebugMode:
+                        raise e
+                else:
+                    continue
+            finally:
+                if self.logging or TransformLoggingMode:
+                    print(f"{t}() Execution Flag: {t.flag}")
             self.flags.append(t.flag)
 
         return img, landmarks
@@ -491,10 +542,15 @@ class LandmarksCompose(object):
                 if const_flag:
                     other_img, other_landmarks = t(other_img, other_landmarks)
             except Exception as e:
-                if self.logging:
-                    print(f"Error at {t.__class__.__name__} Skip, "
-                          f"Flag: {t.flag} Info: {e}")
+                if self.logging or TransformLoggingMode:
+                    print(f"Error at {t}() Skip, "
+                          f"Flag: {t.flag} Error Info: {e}")
+                    if self.debug or TransformDebugMode:
+                        raise e
                 continue
+            finally:
+                if self.logging or TransformLoggingMode:
+                    print(f"{t}() Execution Flag: {t.flag}")
         return other_img, other_landmarks
 
     def apply_affine_to(
@@ -516,10 +572,16 @@ class LandmarksCompose(object):
                         **kwargs
                     )
             except Exception as e:
-                if self.logging:
-                    print(f"Error at {t.__class__.__name__} Skip, "
-                          f"Flag: {t.flag} Info: {e}")
-                continue
+                if self.logging or TransformLoggingMode:
+                    print(f"Error at {t} Skip, "
+                          f"Flag: {t.flag} Error Info: {e}")
+                    if self.debug or TransformDebugMode:
+                        raise e
+                else:
+                    continue
+            finally:
+                if self.logging or TransformLoggingMode:
+                    print(f"{t}() Execution Flag: {t.flag}")
         return other_landmarks
 
     def clear_affine(self):
@@ -1495,7 +1557,7 @@ class LandmarksRandomMask(LandmarksTransform):
 
     def __init__(
             self,
-            mask_ratio: float = 0.25,
+            mask_ratio: float = 0.1,
             prob: float = 0.5,
             trans_ratio: float = 0.5
     ):
@@ -1505,7 +1567,7 @@ class LandmarksRandomMask(LandmarksTransform):
         :param trans_ratio: control the random shape of masked area.
         """
         super(LandmarksRandomMask, self).__init__()
-        assert 0.10 < mask_ratio < 1.
+        assert 0.02 < mask_ratio < 1.
         assert 0 < trans_ratio < 1.
         self._mask_ratio = mask_ratio
         self._trans_ratio = trans_ratio
