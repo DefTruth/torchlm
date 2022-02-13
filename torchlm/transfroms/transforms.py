@@ -7,7 +7,7 @@ import torchvision
 import albumentations
 from torch import Tensor
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Union, List, Optional, Callable
+from typing import Tuple, Union, List, Optional, Callable, Any
 
 from . import functional as F
 from .autodtypes import (
@@ -48,8 +48,23 @@ __all__ = [
     "BindArrayCallable",
     "BindTensorCallable",
     "BindEnum",
-    "bind"
+    "bind",
+    "set_transforms_logging",
+    "set_transforms_debug"
 ]
+
+TransformLoggingMode: bool = False
+TransformDebugMode: bool = False
+
+
+def set_transforms_logging(logging: bool = False):
+    global TransformLoggingMode
+    TransformLoggingMode = logging
+
+
+def set_transforms_debug(debug: bool = False):
+    global TransformDebugMode
+    TransformDebugMode = debug
 
 
 class LandmarksTransform(object):
@@ -319,12 +334,12 @@ class BindAlbumentationsTransform(LandmarksTransform):
 
 Callable_Array_Func_Type = Union[
     Callable[[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]],
-    Callable[[np.ndarray, np.ndarray, ...], Tuple[np.ndarray, np.ndarray]]
+    Callable[[np.ndarray, np.ndarray, Any], Tuple[np.ndarray, np.ndarray]]
 ]
 
 Callable_Tensor_Func_Type = Union[
     Callable[[Tensor, Tensor], Tuple[Tensor, Tensor]],
-    Callable[[Tensor, Tensor, ...], Tuple[Tensor, Tensor]]
+    Callable[[Tensor, Tensor, Any], Tuple[Tensor, Tensor]]
 ]
 
 
@@ -450,11 +465,13 @@ class LandmarksCompose(object):
     def __init__(
             self,
             transforms: List[LandmarksTransform],
-            logging: bool = False
+            logging: bool = False,
+            debug: bool = False
     ):
         self.flags: List[bool] = []
         self.transforms: List[LandmarksTransform] = transforms
         self.logging: bool = logging
+        self.debug: bool = debug
         assert self.check, "Wrong! Need LandmarksTransform !" \
                            f"But got {self.__repr__()}"
 
@@ -473,10 +490,16 @@ class LandmarksCompose(object):
             try:
                 img, landmarks = t(img, landmarks)
             except Exception as e:
-                if self.logging:
-                    print(f"Error at {t.__class__.__name__} Skip, "
-                          f"Flag: {t.flag} Info: {e}")
-                continue
+                if self.logging or TransformLoggingMode:
+                    print(f"Error at {t.__class__.__name__}() Skip, "
+                          f"Flag: {t.flag} Error Info: {e}")
+                    if self.debug or TransformDebugMode:
+                        raise e
+                else:
+                    continue
+            finally:
+                if self.logging or TransformLoggingMode:
+                    print(f"{t.__class__.__name__}() Execution Flag: {t.flag}")
             self.flags.append(t.flag)
 
         return img, landmarks
@@ -491,10 +514,15 @@ class LandmarksCompose(object):
                 if const_flag:
                     other_img, other_landmarks = t(other_img, other_landmarks)
             except Exception as e:
-                if self.logging:
-                    print(f"Error at {t.__class__.__name__} Skip, "
-                          f"Flag: {t.flag} Info: {e}")
+                if self.logging or TransformLoggingMode:
+                    print(f"Error at {t.__class__.__name__}() Skip, "
+                          f"Flag: {t.flag} Error Info: {e}")
+                    if self.debug or TransformDebugMode:
+                        raise e
                 continue
+            finally:
+                if self.logging or TransformLoggingMode:
+                    print(f"{t.__class__.__name__}() Execution Flag: {t.flag}")
         return other_img, other_landmarks
 
     def apply_affine_to(
@@ -516,10 +544,16 @@ class LandmarksCompose(object):
                         **kwargs
                     )
             except Exception as e:
-                if self.logging:
+                if self.logging or TransformLoggingMode:
                     print(f"Error at {t.__class__.__name__} Skip, "
-                          f"Flag: {t.flag} Info: {e}")
-                continue
+                          f"Flag: {t.flag} Error Info: {e}")
+                    if self.debug or TransformDebugMode:
+                        raise e
+                else:
+                    continue
+            finally:
+                if self.logging or TransformLoggingMode:
+                    print(f"{t.__class__.__name__}() Execution Flag: {t.flag}")
         return other_landmarks
 
     def clear_affine(self):
@@ -1495,7 +1529,7 @@ class LandmarksRandomMask(LandmarksTransform):
 
     def __init__(
             self,
-            mask_ratio: float = 0.25,
+            mask_ratio: float = 0.1,
             prob: float = 0.5,
             trans_ratio: float = 0.5
     ):
@@ -1505,7 +1539,7 @@ class LandmarksRandomMask(LandmarksTransform):
         :param trans_ratio: control the random shape of masked area.
         """
         super(LandmarksRandomMask, self).__init__()
-        assert 0.10 < mask_ratio < 1.
+        assert 0.02 < mask_ratio < 1.
         assert 0 < trans_ratio < 1.
         self._mask_ratio = mask_ratio
         self._trans_ratio = trans_ratio

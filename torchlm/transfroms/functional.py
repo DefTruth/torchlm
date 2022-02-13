@@ -31,61 +31,6 @@ def to_numpy(x: Union[np.ndarray, Tensor]) -> np.ndarray:
         return x.detach().cpu().numpy()
 
 
-def draw_bbox(im: np.ndarray, bboxes: np.ndarray) -> np.ndarray:
-    im = im[:, :, :].copy()
-
-    bboxes = bboxes[:, :4]
-    bboxes = bboxes.reshape(-1, 4)
-
-    # draw bbox
-    for box in bboxes:
-        im = cv2.rectangle(im, (int(box[0]), int(box[1])),
-                           (int(box[2]), int(box[3])), (0, 255, 0), 2)
-
-    return im.astype(np.uint8)
-
-
-def draw_landmarks(im: np.ndarray, landmarks: np.ndarray,
-                   font: float = 0.25, circle: int = 2, text: bool = False,
-                   color: Optional[Tuple[int, int, int]] = None,
-                   visibilities: Optional[np.ndarray] = None,
-                   refine_circle: bool = False,
-                   text_offset: int = 2,
-                   thickness: int = 1) -> np.ndarray:
-    im = im.copy()
-    h, w, c = im.shape
-    refine = int(h * (1 / 512) + 1)
-
-    if circle < refine and refine_circle:
-        circle = refine
-
-    default_color = (0, 255, 0)
-    if color is None:
-        color = default_color
-
-    for i in range(landmarks.shape[0]):
-        landmark_ = landmarks[i]
-        color_ = color
-        if visibilities is not None:
-            if visibilities[i] < 0.5:
-                color_ = (0, 0, 255)  # red
-
-        cv2.circle(im, (int(landmark_[0]), int(landmark_[1])), circle, color_, -1)
-        # if i == 33 or i == 48:
-        if text:
-            b = np.random.randint(0, 255)
-            g = np.random.randint(0, 255)
-            r = np.random.randint(0, 255)
-            # b = 0
-            # g = 0
-            # r = 255
-            cv2.putText(im, '{}'.format(i),
-                        (int(landmark_[0]), int(landmark_[1]) - text_offset),
-                        cv2.FONT_ITALIC, font, (b, g, r), thickness)
-
-    return im.astype(np.uint8)
-
-
 def bbox_area(bbox: np.ndarray) -> np.ndarray:
     return (bbox[:, 2] - bbox[:, 0]) * (bbox[:, 3] - bbox[:, 1])
 

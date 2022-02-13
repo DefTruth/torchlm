@@ -1,5 +1,9 @@
+# torchlm
 opencv-python-headless>=4.5.2
 numpy>=1.14.4
 torch>=1.6.0
 torchvision>=0.9.0
 albumentations>=1.1.0
+
+# test
+matplotlib>=3.4.1
