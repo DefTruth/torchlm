@@ -11,7 +11,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, **training** and **inference**. **torchlm** is only focus on any landmarks detection, such as face landmarks, hand keypoints and body keypoints, etc. It provides **30+** native data augmentations and compatible with **80+** torchvision and albumations's transforms, no matter the input is a np.ndarray or a torch Tensor, **torchlm** will **automatically** be compatible with different data types through a **autodtype** wrapper. Further, in the future **torchlm** will add modules for **training** and **inference**.
+**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, **training** and **inference**. **torchlm** is only focus on any landmarks detection, such as face landmarks, hand keypoints and body keypoints, etc. It provides **30+** native data augmentations and compatible with **80+** torchvision and albumations's transforms, no matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap back to the original type through a autodtype wrapper. Further, in the future **torchlm** will add modules for **training** and **inference**.
 
 # 🆕 What's New
 
@@ -95,7 +95,6 @@ def callable_array_noop(
     # Do some transform here ...
     return img.astype(np.uint32), landmarks.astype(np.float32)
 
-
 def callable_tensor_noop(
         img: Tensor,
         landmarks: Tensor
@@ -152,31 +151,25 @@ torchlm.set_transforms_debug(True)
 torchlm.set_transforms_logging(True)
 torchlm.set_autodtype_logging(True)
 ```
-Some details logs will show you at each runtime, just like the follows
+some detail information will show you at each runtime, the infos might look like
 ```shell
-LandmarksRandomHorizontalFlip() AutoDtype Info: AutoDtypeEnum.Array_InOut
-LandmarksRandomHorizontalFlip() Execution Flag: True
 LandmarksRandomScale() AutoDtype Info: AutoDtypeEnum.Array_InOut
 LandmarksRandomScale() Execution Flag: False
-...
 BindTorchVisionTransform(GaussianBlur())() AutoDtype Info: AutoDtypeEnum.Tensor_InOut
 BindTorchVisionTransform(GaussianBlur())() Execution Flag: True
-...
 BindAlbumentationsTransform(ColorJitter())() AutoDtype Info: AutoDtypeEnum.Array_InOut
 BindAlbumentationsTransform(ColorJitter())() Execution Flag: True
-...
 BindArrayCallable(callable_array_noop())() AutoDtype Info: AutoDtypeEnum.Array_InOut
 BindArrayCallable(callable_array_noop())() Execution Flag: True
 BindTensorCallable(callable_tensor_noop())() AutoDtype Info: AutoDtypeEnum.Tensor_InOut
 BindTensorCallable(callable_tensor_noop())() Execution Flag: True
-...
 LandmarksUnNormalize() AutoDtype Info: AutoDtypeEnum.Array_InOut
 LandmarksUnNormalize() Execution Flag: True
 ```
 * Execution Flag: True means current transform was executed successful, False means it was not executed because of the random probability or some Runtime Exceptions(torchlm will should the error infos if debug mode is True).
 * AutoDtype Info: 
   * Array_InOut means current transform need a np.ndnarray as input and then output a np.ndarray.
-  * Tensor_InOut means current transform need a torch Tensor as input and then output torch Tensor. 
+  * Tensor_InOut means current transform need a torch Tensor as input and then output a torch Tensor. 
   * Array_In means current transform needs a np.ndarray input and then output a torch Tensor. 
   * Tensor_In means current transform needs a torch Tensor input and then output a np.ndarray. 
     
