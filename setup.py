@@ -1,7 +1,16 @@
 import setuptools
+from pathlib import Path
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+PATH_ROOT = Path(__file__).parent.resolve()
+
+
+def get_long_description():
+    # Get the long description from the README file
+    description = (PATH_ROOT / "README.md").read_text(encoding="utf-8")
+    # replace relative repository path to absolute link to the release
+    static_url = f"https://github.com/DefTruth/torchlm/blob/main/"
+    description = description.replace("docs/res/", f"{static_url}/docs/res/")
+    return description
 
 setuptools.setup(
     name="torchlm",
@@ -9,7 +18,7 @@ setuptools.setup(
     author="DefTruth",
     author_email="qyjdef@163.com",
     description="A PyTorch landmarks-only library with 100+ data augmentations, training and inference.",
-    long_description=long_description,
+    long_description=get_long_description(),
     long_description_content_type="text/markdown",
     url="https://github.com/DefTruth/torchlm",
     packages=setuptools.find_packages(),

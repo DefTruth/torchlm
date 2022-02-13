@@ -176,7 +176,7 @@ LandmarksUnNormalize() Execution Flag: True
   But, is ok if your pass a Tensor to a np.ndarray like transform, **torchlm** will automatically be compatible with different data types and then wrap back to the original type through a autodtype wrapper.
 
 
-* Supported Transforms Sets, see [transforms.md](docs/api/transfroms.md). A detail example can be found at [test/transforms.py](test/transforms.py).
+* Supported Transforms Sets, see [transforms.md](https://github.com/DefTruth/torchlm/blob/main/docs/api/transfroms.md). A detail example can be found at [test/transforms.py](https://github.com/DefTruth/torchlm/blob/main/test/transforms.py).
 
 ### Training(TODO)
 * [ ] YOLOX
