@@ -6,13 +6,13 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="torchlm",
     version="0.1.0",
-    author="Yan Jun",
+    author="DefTruth",
     author_email="qyjdef@163.com",
     description="A PyTorch landmarks-only library with 100+ data augmentation, training and inference.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/DefTruth/torchlm",
-    packages=["torchlm"],
+    packages=setuptools.find_packages(),
     install_requires=[
         "opencv-python-headless>=4.5.2",
         "numpy>=1.14.4",
@@ -20,7 +20,7 @@ setuptools.setup(
         "torchvision>=0.9.0",
         "albumentations>=1.1.0"
     ],
-    classifiers=(
+    classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
@@ -28,5 +28,5 @@ setuptools.setup(
         "Programming Language :: Python :: 3.9",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent"
-    ),
+    ],
 )
