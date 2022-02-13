@@ -1,10 +1,13 @@
 ![torchlm-logo](docs/res/logo.png)    
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-9cf.svg)](https://github.com/DefTruth/torchlm/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
-[![Slack](https://img.shields.io/badge/slack-chat-ffa.svg?logo=slack)](https://join.slack.com/t/torchlm/shared_invite/zt-mqwc7235-940aAh8IaKYeWclrJx10SA)
-[![PyPI version](https://img.shields.io/pypi/v/torchlm?color=aff)](https://badge.fury.io/py/torchlm)
-[![Python Version](https://img.shields.io/pypi/pyversions/torchlm?color=dfd)](https://pypi.org/project/torchlm/)
-[![OS](https://img.shields.io/badge/macos|linux|windows-pass-skyblue.svg)](https://pypi.org/project/torchlm/)
-[![License](https://img.shields.io/badge/license-MIT-lightblue.svg)](https://pypi.org/project/torchlm/)
+
+<div align='center'>
+  <img src=https://img.shields.io/badge/PRs-welcome-9cf.svg >
+  <img src=https://img.shields.io/badge/slack-chat-ffa.svg?logo=slack >
+  <img src=https://img.shields.io/pypi/v/torchlm?color=aff >
+  <img src=https://img.shields.io/pypi/pyversions/torchlm?color=dfd >
+  <img src=https://img.shields.io/badge/macos|linux|windows-pass-skyblue.svg >
+  <img src=https://img.shields.io/badge/license-MIT-lightblue.svg >
+</div>   
 
 
 ## 🤗 Introduction
@@ -33,12 +36,11 @@ pip3 install torchlm -i https://pypi.org/simple/
 
 ### Data Augmentation
 **torchlm** provides 30+ native data augmentations for landmarks and is compatible with 80+ transforms from torchvision and albumations, no matter the input is a np.ndarray or a torch Tensor, torchlm will automatically be compatible with different data types through a autodtype wrapper. 
-* use native torchlm's transforms 
+* use native torchlm's transforms
 ```python
 import torchlm
 transform = torchlm.LandmarksCompose([
         # use native torchlm transforms
-        torchlm.LandmarksRandomHorizontalFlip(prob=0.5),
         torchlm.LandmarksRandomScale(prob=0.5),
         torchlm.LandmarksRandomTranslate(prob=0.5),
         torchlm.LandmarksRandomShear(prob=0.5),
@@ -54,14 +56,13 @@ transform = torchlm.LandmarksCompose([
         torchlm.LandmarksUnNormalize()
     ])
 ```  
-* **bind** torchvision and albumations's transform
+* **bind** torchvision and albumations's transform, using **torchlm.bind**
 ```python
 import torchvision
 import albumentations
 import torchlm
 transform = torchlm.LandmarksCompose([
         # use native torchlm transforms
-        torchlm.LandmarksRandomHorizontalFlip(prob=0.5),
         torchlm.LandmarksRandomScale(prob=0.5),
         # ...
         # bind torchvision image only transforms
@@ -83,7 +84,7 @@ transform = torchlm.LandmarksCompose([
         torchlm.LandmarksUnNormalize()
     ])
 ```
-* **bind** custom callable array or Tensor functions  
+* **bind** custom callable array or Tensor functions, using **torchlm.bind**  
 
 ```python
 # First, defined your custom functions
@@ -107,7 +108,6 @@ def callable_tensor_noop(
 # Then, bind your functions and put it into transforms pipeline.
 transform = torchlm.LandmarksCompose([
         # use native torchlm transforms
-        torchlm.LandmarksRandomHorizontalFlip(prob=0.5),
         torchlm.LandmarksRandomScale(prob=0.5),
         # ...
         # bind torchvision image only transforms
@@ -134,13 +134,13 @@ transform = torchlm.LandmarksCompose([
     ])
 ```
 <div align='center'>
-  <img src='docs/res/124.jpg' height="90px" width="90px">
-  <img src='docs/res/158.jpg' height="90px" width="90px">
-  <img src='docs/res/386.jpg' height="90px" width="90px">
-  <img src='docs/res/478.jpg' height="90px" width="90px">
-  <img src='docs/res/537.jpg' height="90px" width="90px">
-  <img src='docs/res/605.jpg' height="90px" width="90px">
-  <img src='docs/res/802.jpg' height="90px" width="90px">
+  <img src='docs/res/124.jpg' height="100px" width="100px">
+  <img src='docs/res/158.jpg' height="100px" width="100px">
+  <img src='docs/res/386.jpg' height="100px" width="100px">
+  <img src='docs/res/478.jpg' height="100px" width="100px">
+  <img src='docs/res/537.jpg' height="100px" width="100px">
+  <img src='docs/res/605.jpg' height="100px" width="100px">
+  <img src='docs/res/802.jpg' height="100px" width="100px">
 </div>  
 
 
