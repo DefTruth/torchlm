@@ -31,7 +31,7 @@ def _autodtype_api_logging(self: Any, mode: int):
             AutoDtypeEnum.Tensor_In: "AutoDtypeEnum.Tensor_In",
             AutoDtypeEnum.Tensor_InOut: "AutoDtypeEnum.Tensor_InOut"
         }
-        print(f"{self} AutoDtype Info: {mode_info_map[mode]}")
+        print(f"{self}() AutoDtype Info: {mode_info_map[mode]}")
 
 
 def autodtype(mode: int) -> Callable:
