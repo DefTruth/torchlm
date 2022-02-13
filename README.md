@@ -27,11 +27,19 @@
 * albumentations>=1.1.0
 
 ### Installation
-you can install **torchlm** directly from pip.
+you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/).
 ```shell
 pip3 install torchlm
 # install from specific pypi mirrors use '-i'
 pip3 install torchlm -i https://pypi.org/simple/
+```
+or install from source.
+```shell
+# clone torchlm repository locally
+git clone --depth=1 https://github.com/DefTruth/torchlm.git
+cd torchlm
+# install in editable mode
+pip install -e .
 ```
 
 ### Data Augmentation
@@ -176,7 +184,7 @@ LandmarksUnNormalize() Execution Flag: True
   But, is ok if your pass a Tensor to a np.ndarray like transform, **torchlm** will automatically be compatible with different data types and then wrap back to the original type through a autodtype wrapper.
 
 
-* Supported Transforms Sets, see [transforms.md](docs/api/transfroms.md). A detail example can be found at [test/transforms.py](test/transforms.py).
+* Supported Transforms Sets, see [transforms.md](https://github.com/DefTruth/torchlm/blob/main/docs/api/transfroms.md). A detail example can be found at [test/transforms.py](https://github.com/DefTruth/torchlm/blob/main/test/transforms.py).
 
 ### Training(TODO)
 * [ ] YOLOX
