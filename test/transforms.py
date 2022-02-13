@@ -48,7 +48,6 @@ def test_torchlm_transforms():
 
     transform = torchlm.LandmarksCompose([
         # use native torchlm transforms
-        torchlm.LandmarksRandomHorizontalFlip(prob=0.5),
         torchlm.LandmarksRandomScale(prob=0.5),
         torchlm.LandmarksRandomTranslate(prob=0.5),
         torchlm.LandmarksRandomShear(prob=0.5),
