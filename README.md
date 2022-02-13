@@ -202,11 +202,11 @@ LandmarksUnNormalize() Execution Flag: True
 * [ ] TNN
 * [ ] ... 
 
-## Documentations
-* [ ] Native Data Augmentation's API docs(TODO)
+## 📖 Documentations
+* [ ] Native Data Augmentation's API (TODO)
 * [ ] ...
 
-## 📖 License 
+## 🎓 License 
 The code of torchlm is released under the MIT License.
 
 ## 👋 Contributing
