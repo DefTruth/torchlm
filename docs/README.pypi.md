@@ -11,7 +11,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, **training** and **inference**. **torchlm** is only focus on any landmarks detection, such as face landmarks, hand keypoints and body keypoints, etc. It provides **30+** native data augmentations and can **bind** with **80+** transforms from torchvision and albumations, no matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. Further, **torchlm** will add modules for **training** and **inference** in the future.
+**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, **training** and **inference**. **torchlm** is only focus on any landmarks detection, such as face landmarks, hand keypoints and body keypoints, etc. It provides **30+** native data augmentations and can **bind** with **80+** transforms from torchvision and albumations, no matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. Further, **torchlm** will add modules for **training** and **inference** in the future. [❤️ Star 🌟👆🏻 this repo to support me if it does any helps to you, thanks ~ ]
 
 # 🆕 What's New
 
@@ -170,7 +170,7 @@ BindTensorCallable(callable_tensor_noop())() Execution Flag: False
 * [ ] ShuffleNet
 * [ ] ...
 
-### Inference(TODO)
+### Inference(TODO) 
 * [ ] ONNXRuntime
 * [ ] MNN
 * [ ] NCNN
@@ -184,8 +184,8 @@ BindTensorCallable(callable_tensor_noop())() Execution Flag: False
 ## 🎓 License 
 The code of **torchlm** is released under the MIT License.
 
-## 🤓 Contribution
-If you like this project please consider ⭐ this repo, as it is the simplest way to support me.
+## ❤️ Contribution
+Please consider ⭐ this repo if you like it, as it is the simplest way to support me.
 
 ## 👋 Acknowledgement  
 The implementation of torchlm's transforms borrow the code from [Paperspace](https://github.com/Paperspace/DataAugmentationForObjectDetection/blob/master/data_aug/bbox_util.py) .  
