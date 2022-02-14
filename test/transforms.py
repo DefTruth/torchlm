@@ -57,7 +57,7 @@ def test_torchlm_transforms():
         torchlm.LandmarksRandomRotate(40, prob=0.5, bins=8),
         torchlm.LandmarksRandomCenterCrop((0.5, 1.0), (0.5, 1.0), prob=0.5),
         # bind torchvision image only transforms
-        torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25))),
+        torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),
         torchlm.bind(torchvision.transforms.RandomAutocontrast(p=0.5)),
         torchlm.bind(torchvision.transforms.RandomAdjustSharpness(sharpness_factor=3, p=0.5)),
         # bind albumentations image only transforms
@@ -69,9 +69,9 @@ def test_torchlm_transforms():
         torchlm.bind(albumentations.RandomScale(p=0.5)),
         torchlm.bind(albumentations.Rotate(p=0.5)),
         # bind custom callable array functions
-        torchlm.bind(callable_array_noop, bind_type=torchlm.BindEnum.Callable_Array),
+        torchlm.bind(callable_array_noop, bind_type=torchlm.BindEnum.Callable_Array, prob=0.5),
         # bind custom callable Tensor functions
-        torchlm.bind(callable_tensor_noop, bind_type=torchlm.BindEnum.Callable_Tensor),
+        torchlm.bind(callable_tensor_noop, bind_type=torchlm.BindEnum.Callable_Tensor, prob=0.5),
         torchlm.LandmarksResize((256, 256)),
         torchlm.LandmarksNormalize(),
         torchlm.LandmarksToTensor(),

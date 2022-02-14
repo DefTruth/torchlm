@@ -67,6 +67,15 @@ def set_transforms_debug(debug: bool = False):
     TransformDebugMode = debug
 
 
+def _transforms_api_logging(info: str):
+    global TransformLoggingMode
+    if TransformLoggingMode: print(info)
+
+def _transforms_api_debug(error: Exception):
+    global TransformDebugMode
+    if TransformDebugMode: raise error
+
+
 class LandmarksTransform(object):
     __metaclass__ = ABCMeta
 
@@ -151,7 +160,8 @@ class BindTorchVisionTransform(LandmarksTransform):
 
     def __init__(
             self,
-            transform: TorchVision_Transform_Type
+            transform: TorchVision_Transform_Type,
+            prob: float = 1.0
     ):
         super(BindTorchVisionTransform, self).__init__()
         assert isinstance(
@@ -159,7 +169,7 @@ class BindTorchVisionTransform(LandmarksTransform):
             self._Supported_Image_Only_Transform_Set
         ), f"Only supported image only transform for" \
            f" torchvision:\n {self._Supported_Image_Only_Transform_Set}"
-
+        self.prob = prob
         self.transform_internal = transform
 
     @autodtype(AutoDtypeEnum.Tensor_InOut)
@@ -172,6 +182,10 @@ class BindTorchVisionTransform(LandmarksTransform):
         # just let the landmarks unchanged. Note (3,H,W)
         # is need for torchvision
         try:
+            if np.random.uniform(0., 1.0) > self.prob:
+                self.clear_affine()
+                return img, landmarks
+
             chw = img.size()[0] == 3
             if not chw:
                 img = img.permute((2, 0, 1)).contiguous()
@@ -278,6 +292,7 @@ class BindAlbumentationsTransform(LandmarksTransform):
     def __init__(
             self,
             transform: Albumentations_Transform_Type,
+            prob: float = 1.0
     ):
         super(BindAlbumentationsTransform, self).__init__()
         # wrapper transform with a simple albumentations
@@ -291,6 +306,7 @@ class BindAlbumentationsTransform(LandmarksTransform):
         )), f"The transform from albumentations must be one of:" \
             f"\n{self._Supported_Image_Only_Transform_Set}, " \
             f"\n{self._Supported_Dual_Transform_Set}"
+        self.prob = prob
         self.transform_internal = transform
         self.compose_internal = albumentations.Compose(
             transforms=[transform],
@@ -328,6 +344,11 @@ class BindAlbumentationsTransform(LandmarksTransform):
         kps_num = len(keypoints)
 
         try:
+            # random skip
+            if np.random.uniform(0., 1.0) > self.prob:
+                self.clear_affine()
+                return img.astype(np.uint8), landmarks.astype(np.float32)
+
             transformed = self.compose_internal(image=img, keypoints=keypoints)
             trans_img = transformed['image']
             trans_kps = transformed['keypoints']
@@ -338,6 +359,12 @@ class BindAlbumentationsTransform(LandmarksTransform):
                 trans_kps = trans_kps.reshape(kps_num, 2)
                 landmarks[:, :2] = trans_kps
                 img = trans_img
+            else:
+                _transforms_api_logging(
+                    f"{self}() Missing landmarks after transform, "
+                    f"expect {kps_num} but got {len(trans_kps)},"
+                    f"skip this transform"
+                )
             self.flag = True
             # changed nothings if any kps been outside
             return img.astype(np.uint8), landmarks.astype(np.float32)
@@ -366,7 +393,8 @@ class BindArrayCallable(LandmarksTransform):
 
     def __init__(
             self,
-            call_func: Callable_Array_Func_Type
+            call_func: Callable_Array_Func_Type,
+            prob: float = 1.0
     ):
         super(BindArrayCallable, self).__init__()
         if not callable(call_func):
@@ -374,6 +402,7 @@ class BindArrayCallable(LandmarksTransform):
                 "Argument call_func should be callable, "
                 "got {}".format(repr(type(call_func).__name__))
             )
+        self.prob = prob
         self.call_func: Callable_Array_Func_Type = call_func
 
     @autodtype(AutoDtypeEnum.Array_InOut)
@@ -384,8 +413,23 @@ class BindArrayCallable(LandmarksTransform):
             **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         try:
-            img, landmarks = self.call_func(img, landmarks, **kwargs)
+            # random skip
+            if np.random.uniform(0., 1.0) > self.prob:
+                self.clear_affine()
+                return img.astype(np.int32), landmarks.astype(np.float32)
 
+            kps_num = landmarks.shape[0]
+            trans_img, trans_kps = self.call_func(img, landmarks, **kwargs)
+            if trans_kps.shape[0] == kps_num:
+                img = trans_img
+                landmarks = trans_kps
+            else:
+                _transforms_api_logging(
+                    f"{self}() Missing landmarks after transform, "
+                    f"expect {kps_num} but got {trans_kps.shape[0]},"
+                    f"skip this transform"
+                )
+            # changed nothings if any kps has been outside
             self.flag = True
             return img.astype(np.int32), landmarks.astype(np.float32)
 
@@ -404,7 +448,8 @@ class BindTensorCallable(LandmarksTransform):
 
     def __init__(
             self,
-            call_func: Callable_Tensor_Func_Type
+            call_func: Callable_Tensor_Func_Type,
+            prob: float = 1.0
     ):
         super(BindTensorCallable, self).__init__()
         if not callable(call_func):
@@ -412,6 +457,7 @@ class BindTensorCallable(LandmarksTransform):
                 "Argument call_func should be callable, "
                 "got {}".format(repr(type(call_func).__name__))
             )
+        self.prob = prob
         self.call_func: Callable_Tensor_Func_Type = call_func
 
     @autodtype(AutoDtypeEnum.Tensor_InOut)
@@ -422,8 +468,23 @@ class BindTensorCallable(LandmarksTransform):
             **kwargs
     ) -> Tuple[Tensor, Tensor]:
         try:
-            img, landmarks = self.call_func(img, landmarks, **kwargs)
+            # random skip
+            if np.random.uniform(0., 1.0) > self.prob:
+                self.clear_affine()
+                return img, landmarks
 
+            kps_num = landmarks.size()[0]
+            trans_img, trans_kps = self.call_func(img, landmarks, **kwargs)
+            if trans_kps.size()[0] == kps_num:
+                img = trans_img
+                landmarks = trans_kps
+            else:
+                _transforms_api_logging(
+                    f"{self}() Missing landmarks after transform, "
+                    f"expect {kps_num} but got {trans_kps.size()[0]},"
+                    f"skip this transform"
+                )
+            # changed nothings if any kps has been outside
             self.flag = True
             return img, landmarks
         except:
@@ -434,6 +495,7 @@ class BindTensorCallable(LandmarksTransform):
         return self.__class__.__name__ + '(' \
                + self.call_func.__name__ \
                + '())'
+
 
 Bind_Transform_Or_Callable_Input_Type = Union[
     TorchVision_Transform_Type,
@@ -460,29 +522,32 @@ class BindEnum:
 def bind(
         transform_or_callable: Bind_Transform_Or_Callable_Input_Type,
         bind_type: int = BindEnum.Transform,
+        **kwargs
 ) -> Bind_Transform_Output_Type:
     """
     :param transform_or_callable: some custom transform from torchvision and albumentations,
            or some custom transform callable functions defined by users.
     :param bind_type: See BindEnum.
+    :param kwargs: extra args, such as prob(default 1.0) at bind level to force any transform
+           or callable be a random-style.
     """
     if bind_type == BindEnum.Transform:
         # bind torchvision transform
         if isinstance(transform_or_callable, TorchVision_Transform_Type):
-            return BindTorchVisionTransform(transform_or_callable)
+            return BindTorchVisionTransform(transform_or_callable, **kwargs)
         elif isinstance(
                 transform_or_callable,
                 (albumentations.ImageOnlyTransform,
                  albumentations.DualTransform)
         ):
             # bind albumentations transform
-            return BindAlbumentationsTransform(transform_or_callable)
+            return BindAlbumentationsTransform(transform_or_callable, **kwargs)
         else:
             raise TypeError(f"not supported: {transform_or_callable}")
     elif bind_type == BindEnum.Callable_Tensor:
-        return BindTensorCallable(transform_or_callable)
+        return BindTensorCallable(transform_or_callable, **kwargs)
     elif bind_type == BindEnum.Callable_Array:
-        return BindArrayCallable(transform_or_callable)
+        return BindArrayCallable(transform_or_callable, **kwargs)
     else:
         raise TypeError(f"not supported: {transform_or_callable}")
 
@@ -492,14 +557,10 @@ class LandmarksCompose(object):
 
     def __init__(
             self,
-            transforms: List[LandmarksTransform],
-            logging: bool = False,
-            debug: bool = False
+            transforms: List[LandmarksTransform]
     ):
         self.flags: List[bool] = []
         self.transforms: List[LandmarksTransform] = transforms
-        self.logging: bool = logging
-        self.debug: bool = debug
         assert self.check, "Wrong! Need LandmarksTransform !" \
                            f"But got {self.__repr__()}"
 
@@ -518,16 +579,12 @@ class LandmarksCompose(object):
             try:
                 img, landmarks = t(img, landmarks)
             except Exception as e:
-                if self.logging or TransformLoggingMode:
-                    print(f"Error at {t}() Skip, "
-                          f"Flag: {t.flag} Error Info: {e}")
-                    if self.debug or TransformDebugMode:
-                        raise e
-                else:
-                    continue
+                _transforms_api_logging(f"Error at {t}() Skip, Flag: "
+                                        f"{t.flag} Error Info: {e}")
+                _transforms_api_debug(e) # after logging
+                continue
             finally:
-                if self.logging or TransformLoggingMode:
-                    print(f"{t}() Execution Flag: {t.flag}")
+                _transforms_api_logging(f"{t}() Execution Flag: {t.flag}")
             self.flags.append(t.flag)
 
         return img, landmarks
@@ -542,15 +599,12 @@ class LandmarksCompose(object):
                 if const_flag:
                     other_img, other_landmarks = t(other_img, other_landmarks)
             except Exception as e:
-                if self.logging or TransformLoggingMode:
-                    print(f"Error at {t}() Skip, "
-                          f"Flag: {t.flag} Error Info: {e}")
-                    if self.debug or TransformDebugMode:
-                        raise e
+                _transforms_api_logging(f"Error at {t}() Skip, Flag: "
+                                        f"{t.flag} Error Info: {e}")
+                _transforms_api_debug(e)  # after logging
                 continue
             finally:
-                if self.logging or TransformLoggingMode:
-                    print(f"{t}() Execution Flag: {t.flag}")
+                _transforms_api_logging(f"{t}() Execution Flag: {t.flag}")
         return other_img, other_landmarks
 
     def apply_affine_to(
@@ -572,16 +626,12 @@ class LandmarksCompose(object):
                         **kwargs
                     )
             except Exception as e:
-                if self.logging or TransformLoggingMode:
-                    print(f"Error at {t} Skip, "
-                          f"Flag: {t.flag} Error Info: {e}")
-                    if self.debug or TransformDebugMode:
-                        raise e
-                else:
-                    continue
+                _transforms_api_logging(f"Error at {t}() Skip, Flag: "
+                                        f"{t.flag} Error Info: {e}")
+                _transforms_api_debug(e)  # after logging
+                continue
             finally:
-                if self.logging or TransformLoggingMode:
-                    print(f"{t}() Execution Flag: {t.flag}")
+                _transforms_api_logging(f"{t}() Execution Flag: {t.flag}")
         return other_landmarks
 
     def clear_affine(self):

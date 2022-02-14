@@ -1,4 +1,4 @@
-![torchlm-logo](docs/res/logo.png)    
+![torchlm-logo](https://github.com/DefTruth/torchlm/blob/main/docs/res/logo.png)    
 
 <div align='center'>
   <img src=https://img.shields.io/badge/PRs-welcome-9cf.svg >
@@ -62,13 +62,13 @@ transform = torchlm.LandmarksCompose([
     ])
 ```  
 <div align='center'>
-  <img src='docs/res/10.jpg' height="100px" width="100px">
-  <img src='docs/res/40.jpg' height="100px" width="100px">
-  <img src='docs/res/92.jpg' height="100px" width="100px">
-  <img src='docs/res/234.jpg' height="100px" width="100px">
-  <img src='docs/res/243.jpg' height="100px" width="100px">
-  <img src='docs/res/255.jpg' height="100px" width="100px">
-  <img src='docs/res/388.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/10.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/40.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/92.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/234.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/243.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/255.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/388.jpg' height="100px" width="100px">
 </div>  
 
 * **bind** torchvision and albumations's transform, using **torchlm.bind**
@@ -117,13 +117,13 @@ transform = torchlm.LandmarksCompose([
     ])
 ```
 <div align='center'>
-  <img src='docs/res/124.jpg' height="100px" width="100px">
-  <img src='docs/res/158.jpg' height="100px" width="100px">
-  <img src='docs/res/386.jpg' height="100px" width="100px">
-  <img src='docs/res/478.jpg' height="100px" width="100px">
-  <img src='docs/res/537.jpg' height="100px" width="100px">
-  <img src='docs/res/605.jpg' height="100px" width="100px">
-  <img src='docs/res/802.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/124.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/158.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/386.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/478.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/537.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/605.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/802.jpg' height="100px" width="100px">
 </div>  
 
 
