@@ -143,8 +143,6 @@ BindTorchVisionTransform(GaussianBlur())() AutoDtype Info: AutoDtypeEnum.Tensor_
 BindTorchVisionTransform(GaussianBlur())() Execution Flag: True
 BindAlbumentationsTransform(ColorJitter())() AutoDtype Info: AutoDtypeEnum.Array_InOut
 BindAlbumentationsTransform(ColorJitter())() Execution Flag: True
-BindArrayCallable(callable_array_noop())() AutoDtype Info: AutoDtypeEnum.Array_InOut
-BindArrayCallable(callable_array_noop())() Execution Flag: True
 BindTensorCallable(callable_tensor_noop())() AutoDtype Info: AutoDtypeEnum.Tensor_InOut
 BindTensorCallable(callable_tensor_noop())() Execution Flag: False
 ```
