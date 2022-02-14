@@ -1,4 +1,4 @@
-![torchlm-logo](docs/res/logo.png)    
+![torchlm-logo](https://github.com/DefTruth/torchlm/blob/main/docs/res/logo.png)    
 
 <div align='center'>
   <img src=https://img.shields.io/badge/PRs-welcome-9cf.svg >
@@ -11,7 +11,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, **training** and **inference**. **torchlm** is only focus on any landmark detection, such as face landmarks, hand keypoints and body keypoints, etc. It provides **30+** native data augmentations and can **bind** with **80+** transforms from torchvision and albumations, no matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. Further, **torchlm** will add modules for **training** and **inference** in the future. 
+**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, **training** and **inference**. **torchlm** is only focus on any landmarks detection, such as face landmarks, hand keypoints and body keypoints, etc. It provides **30+** native data augmentations and can **bind** with **80+** transforms from torchvision and albumations, no matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. Further, **torchlm** will add modules for **training** and **inference** in the future. [❤️ Star 🌟👆🏻 this repo to support me if it does any helps to you, thanks ~ ]
 
 # 🆕 What's New
 
@@ -43,7 +43,7 @@ pip install -e .
 ```
 
 ### Data Augmentation
-**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. No matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. 
+**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumations **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` parameter at bind-level to force any transform or callable be a random-style. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto drop to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. No matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. 
 
 * use native torchlm transforms
 ```python
@@ -62,13 +62,13 @@ transform = torchlm.LandmarksCompose([
     ])
 ```  
 <div align='center'>
-  <img src='docs/res/10.jpg' height="100px" width="100px">
-  <img src='docs/res/40.jpg' height="100px" width="100px">
-  <img src='docs/res/92.jpg' height="100px" width="100px">
-  <img src='docs/res/234.jpg' height="100px" width="100px">
-  <img src='docs/res/243.jpg' height="100px" width="100px">
-  <img src='docs/res/255.jpg' height="100px" width="100px">
-  <img src='docs/res/388.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/10.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/40.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/92.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/234.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/243.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/255.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/388.jpg' height="100px" width="100px">
 </div>  
 
 * **bind** torchvision and albumations's transform, using **torchlm.bind**
@@ -117,13 +117,13 @@ transform = torchlm.LandmarksCompose([
     ])
 ```
 <div align='center'>
-  <img src='docs/res/124.jpg' height="100px" width="100px">
-  <img src='docs/res/158.jpg' height="100px" width="100px">
-  <img src='docs/res/386.jpg' height="100px" width="100px">
-  <img src='docs/res/478.jpg' height="100px" width="100px">
-  <img src='docs/res/537.jpg' height="100px" width="100px">
-  <img src='docs/res/605.jpg' height="100px" width="100px">
-  <img src='docs/res/802.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/124.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/158.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/386.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/478.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/537.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/605.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/blob/main/docs/res/802.jpg' height="100px" width="100px">
 </div>  
 
 
@@ -143,6 +143,8 @@ BindTorchVisionTransform(GaussianBlur())() AutoDtype Info: AutoDtypeEnum.Tensor_
 BindTorchVisionTransform(GaussianBlur())() Execution Flag: True
 BindAlbumentationsTransform(ColorJitter())() AutoDtype Info: AutoDtypeEnum.Array_InOut
 BindAlbumentationsTransform(ColorJitter())() Execution Flag: True
+BindArrayCallable(callable_array_noop())() AutoDtype Info: AutoDtypeEnum.Array_InOut
+BindArrayCallable(callable_array_noop())() Execution Flag: True
 BindTensorCallable(callable_tensor_noop())() AutoDtype Info: AutoDtypeEnum.Tensor_InOut
 BindTensorCallable(callable_tensor_noop())() Execution Flag: False
 ```
@@ -168,7 +170,7 @@ BindTensorCallable(callable_tensor_noop())() Execution Flag: False
 * [ ] ShuffleNet
 * [ ] ...
 
-### Inference(TODO)
+### Inference(TODO) 
 * [ ] ONNXRuntime
 * [ ] MNN
 * [ ] NCNN
