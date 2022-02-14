@@ -5,3 +5,4 @@ debug.py
 build
 dist
 torchlm.egg-info
+*.sh
