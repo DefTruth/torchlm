@@ -79,8 +79,8 @@ import torchlm
 transform = torchlm.LandmarksCompose([
         # use native torchlm transforms
         torchlm.LandmarksRandomScale(prob=0.5),
-        # bind torchvision image only transforms
-        torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),  # bind with a given prob
+        # bind torchvision image only transforms, bind with a given prob
+        torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),  
         torchlm.bind(torchvision.transforms.RandomAutocontrast(p=0.5)),
         # bind albumentations image only transforms
         torchlm.bind(albumentations.ColorJitter(p=0.5)),
