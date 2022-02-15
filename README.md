@@ -11,11 +11,11 @@
 
 
 ## 🤗 Introduction
-**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, **training** and **inference**. **torchlm** is only focus on any landmark detection, such as face landmarks, hand keypoints and body keypoints, etc. It provides **30+** native data augmentations and can **bind** with **80+** transforms from torchvision and albumations, no matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. Further, **torchlm** will add modules for **training** and **inference** in the future. 
+**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, support **training** and **inference**. **torchlm** is aims to only focus on any landmark detection, such as face landmarks, hand keypoints and body keypoints, etc. It provides **30+** native data augmentations and can **bind** with **80+** transforms from torchvision and albumentations, no matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. Further, **torchlm** will add modules for **training** and **inference** in the future. 
 
 # 🆕 What's New
 
-* [2022/02/13]: Add **30+** native data augmentations and **bind** **80+** torchvision and albumations's transforms.
+* [2022/02/13]: Add **30+** native data augmentations and **bind** **80+** transforms from torchvision and albumentations.
 
 ## 🛠️ Usage
 
@@ -43,9 +43,9 @@ pip install -e .
 ```
 
 ### Data Augmentation
-**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. No matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. 
+**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. No matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. 
 
-* use native torchlm transforms
+* use almost **30+** native transforms from **torchlm** directly
 ```python
 import torchlm
 transform = torchlm.LandmarksCompose([
@@ -62,16 +62,16 @@ transform = torchlm.LandmarksCompose([
     ])
 ```  
 <div align='center'>
-  <img src='docs/res/10.jpg' height="100px" width="100px">
-  <img src='docs/res/40.jpg' height="100px" width="100px">
+  <img src='docs/res/605.jpg' height="100px" width="100px">
+  <img src='docs/res/802.jpg' height="100px" width="100px">
   <img src='docs/res/92.jpg' height="100px" width="100px">
   <img src='docs/res/234.jpg' height="100px" width="100px">
-  <img src='docs/res/243.jpg' height="100px" width="100px">
-  <img src='docs/res/255.jpg' height="100px" width="100px">
+  <img src='docs/res/906.jpg' height="100px" width="100px">
+  <img src='docs/res/825.jpg' height="100px" width="100px">
   <img src='docs/res/388.jpg' height="100px" width="100px">
 </div>  
 
-* **bind** torchvision and albumations's transform, using **torchlm.bind**
+* **bind** torchvision and albumentations's transforms through **torchlm.bind**
 ```python
 import torchvision
 import albumentations
@@ -79,8 +79,8 @@ import torchlm
 transform = torchlm.LandmarksCompose([
         # use native torchlm transforms
         torchlm.LandmarksRandomScale(prob=0.5),
-        # bind torchvision image only transforms
-        torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),  # bind with a given prob
+        # bind torchvision image only transforms, bind with a given prob
+        torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),  
         torchlm.bind(torchvision.transforms.RandomAutocontrast(p=0.5)),
         # bind albumentations image only transforms
         torchlm.bind(albumentations.ColorJitter(p=0.5)),
@@ -91,7 +91,7 @@ transform = torchlm.LandmarksCompose([
         # ...
     ])
 ```
-* **bind** custom callable array or Tensor functions, using **torchlm.bind**  
+* **bind** custom callable array or Tensor functions through **torchlm.bind**  
 
 ```python
 # First, defined your custom functions
@@ -168,12 +168,8 @@ BindTensorCallable(callable_tensor_noop())() Execution Flag: False
 * [ ] ShuffleNet
 * [ ] ...
 
-### Inference(TODO)
-* [ ] ONNXRuntime
-* [ ] MNN
-* [ ] NCNN
-* [ ] TNN
-* [ ] ... 
+### Inference
+The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 
 ## 📖 Documentations
 * [ ] Data Augmentation's API (TODO)
