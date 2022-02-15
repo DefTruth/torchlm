@@ -45,7 +45,7 @@ pip install -e .
 ### Data Augmentation
 **torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. No matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. 
 
-* use **30+** native torchlm transforms
+* use almost **30+** native transforms from **torchlm** directly
 ```python
 import torchlm
 transform = torchlm.LandmarksCompose([
@@ -71,7 +71,7 @@ transform = torchlm.LandmarksCompose([
   <img src='docs/res/388.jpg' height="100px" width="100px">
 </div>  
 
-* **bind** torchvision and albumentations's transform, using **torchlm.bind**
+* **bind** torchvision and albumentations's transforms through **torchlm.bind**
 ```python
 import torchvision
 import albumentations
@@ -91,7 +91,7 @@ transform = torchlm.LandmarksCompose([
         # ...
     ])
 ```
-* **bind** custom callable array or Tensor functions, using **torchlm.bind**  
+* **bind** custom callable array or Tensor functions through **torchlm.bind**  
 
 ```python
 # First, defined your custom functions
@@ -168,12 +168,8 @@ BindTensorCallable(callable_tensor_noop())() Execution Flag: False
 * [ ] ShuffleNet
 * [ ] ...
 
-### Inference(TODO)
-* [ ] ONNXRuntime
-* [ ] MNN
-* [ ] NCNN
-* [ ] TNN
-* [ ] ... 
+### Inference
+The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 
 ## 📖 Documentations
 * [ ] Data Augmentation's API (TODO)
