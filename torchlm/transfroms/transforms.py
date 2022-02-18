@@ -807,6 +807,7 @@ class LandmarksResize(LandmarksTransform):
             self.scale_y = scale_y
 
         if len(new_landmarks) != num_landmarks:
+            self.flag = False
             raise F.Error('LandmarksResize: {0} input landmarks, but got {1} output '
                           'landmarks'.format(num_landmarks, len(new_landmarks)))
 
@@ -957,6 +958,7 @@ class LandmarksAlign(LandmarksTransform):
         self.scale_y = (1 / scale_factor_y)
 
         if len(new_landmarks) != num_landmarks:
+            self.flag = False
             raise F.Error('LandmarksAlign: {0} input landmarks, but got {1} output '
                           'landmarks'.format(num_landmarks, len(new_landmarks)))
 
@@ -1038,6 +1040,7 @@ class LandmarksRandomAlign(LandmarksTransform):
         self.scale_y = (1 / scale_factor_y)
 
         if len(new_landmarks) != num_landmarks:
+            self.flag = False
             raise F.Error('LandmarksAlign: {0} input landmarks, but got {1} output '
                           'landmarks'.format(num_landmarks, len(new_landmarks)))
 
@@ -1114,6 +1117,7 @@ class LandmarksRandomCenterCrop(LandmarksTransform):
         ly_max = np.max(new_landmarks[:, 1])
 
         if any((lx_min < 0., lx_max > crop_width, ly_min < 0., ly_max > crop_height)):
+            self.flag = False
             return img.astype(np.uint8), landmarks
 
         new_img = img[y1:y2, x1:x2, :].copy()
@@ -1255,6 +1259,7 @@ class LandmarksRandomScale(LandmarksTransform):
         self.scale_y = resize_scale_y
 
         if len(new_landmarks) != num_landmarks:
+            self.flag = False
             raise F.Error('LandmarksRandomScale: {0} input landmarks, but got {1} output '
                           'landmarks'.format(num_landmarks, len(new_landmarks)))
 
@@ -1344,6 +1349,7 @@ class LandmarksRandomTranslate(LandmarksTransform):
                                               img_h=new_img.shape[0])
 
         if len(new_landmarks) != num_landmarks:
+            self.flag = False
             raise F.Error('LandmarksRandomTranslate: {0} input landmarks, but got {1} '
                           'output landmarks'.format(num_landmarks, len(new_landmarks)))
 
@@ -1430,6 +1436,7 @@ class LandmarksRandomRotate(LandmarksTransform):
         self.scale_y = (1 / scale_factor_y)
 
         if len(new_landmarks) != num_landmarks:
+            self.flag = False
             raise F.Error(
                 'LandmarksRandomRotate: {0} input landmarks, but got {1} output '
                 'landmarks'.format(num_landmarks, len(new_landmarks))
@@ -1512,6 +1519,7 @@ class LandmarksRandomShear(LandmarksTransform):
         self.scale_y = 1.
 
         if len(new_landmarks) != num_landmarks:
+            self.flag = False
             raise F.Error(
                 'LandmarksRandomShear: {0} input landmarks, but got {1} output '
                 'landmarks'.format(num_landmarks, len(new_landmarks))
@@ -1848,7 +1856,7 @@ class LandmarksRandomPatches(LandmarksTransform):
         patch = F.select_patch(patch_h=new_patch_h, patch_w=new_patch_w,
                                patches_paths=self._patches_paths)
         if patch is None:
-            self.flag = True
+            self.flag = False
             img.astype(np.uint8), landmarks.astype(np.float32)
 
         new_img, patch_corner = F.apply_patch(img=img, patch=patch)
@@ -1911,7 +1919,7 @@ class LandmarksRandomPatchesWithAlpha(LandmarksTransform):
         patch = F.select_patch(patch_h=new_patch_h, patch_w=new_patch_w,
                                patches_paths=self._patches_paths)
         if patch is None:
-            self.flag = True
+            self.flag = False
             img.astype(np.uint8), landmarks.astype(np.float32)
 
         alpha = np.random.uniform(0.1, self._alpha)
@@ -1961,7 +1969,7 @@ class LandmarksRandomBackgroundWithAlpha(LandmarksTransform):
         )
 
         if background is None:
-            self.flag = True
+            self.flag = False
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
         new_img = F.apply_background_with_alpha(img=img, background=background, alpha=alpha)
@@ -2008,7 +2016,7 @@ class LandmarksRandomBackground(LandmarksTransform):
         )
 
         if background is None:
-            self.flag = True
+            self.flag = False
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
         new_img = F.apply_background(img=img, background=background)

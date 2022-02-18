@@ -6,3 +6,4 @@ build
 dist
 torchlm.egg-info
 *.sh
+./data
