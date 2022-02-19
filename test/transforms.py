@@ -31,15 +31,15 @@ def test_torchlm_transforms():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./1.jpg"
-    anno_path = "./1.txt"
-    save_path = f"./logs/{seed}.jpg"
+    img_path = "./2.jpg"
+    anno_path = "./2.txt"
+    save_path = f"./logs/2_wflw_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
-        lm_info = fr.readlines()[0].strip('\n').split(' ')[1:]
+        lm_info = fr.readlines()[0].strip('\n').split(' ')
 
-    landmarks = [float(x) for x in lm_info[4:]]
-    landmarks = np.array(landmarks).reshape(5, 2)  # (5,2)
+    landmarks = [float(x) for x in lm_info[:196]]
+    landmarks = np.array(landmarks).reshape(98, 2)  # (5,2) or (98, 2) for WFLW
 
     # some global setting will show you useful details
     torchlm.set_transforms_debug(True)
@@ -80,7 +80,7 @@ def test_torchlm_transforms():
     ])
 
     trans_img, trans_landmarks = transform(img, landmarks)
-    new_img = torchlm.draw_landmarks(trans_img, trans_landmarks)
+    new_img = torchlm.draw_landmarks(trans_img, trans_landmarks, circle=2)
     plt.imshow(new_img)
     plt.show()
     cv2.imwrite(save_path, new_img[:, :, ::-1])

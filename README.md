@@ -12,6 +12,23 @@
 
 ## 🤗 Introduction
 **torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, support **training** and **inference**. **torchlm** is aims at only focus on any landmark detection, such as face landmarks, hand keypoints and body keypoints, etc. It provides **30+** native data augmentations and can **bind** with **80+** transforms from torchvision and albumentations, no matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. Further, **torchlm** will add modules for **training** and **inference** in the future. 
+<div align='center'>
+  <img src='docs/res/605.jpg' height="100px" width="100px">
+  <img src='docs/res/802.jpg' height="100px" width="100px">
+  <img src='docs/res/92.jpg' height="100px" width="100px">
+  <img src='docs/res/234.jpg' height="100px" width="100px">
+  <img src='docs/res/906.jpg' height="100px" width="100px">
+  <img src='docs/res/825.jpg' height="100px" width="100px">
+  <img src='docs/res/388.jpg' height="100px" width="100px">
+  <br>
+  <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_76.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_162.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_229.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_440.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_478.jpg' height="100px" width="100px">
+</div>  
 
 # 🆕 What's New
 
@@ -69,6 +86,14 @@ transform = torchlm.LandmarksCompose([
   <img src='docs/res/906.jpg' height="100px" width="100px">
   <img src='docs/res/825.jpg' height="100px" width="100px">
   <img src='docs/res/388.jpg' height="100px" width="100px">
+  <br>
+  <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_76.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_162.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_229.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_440.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_478.jpg' height="100px" width="100px">
 </div>  
 
 * **bind** torchvision and albumentations's transforms through **torchlm.bind**
@@ -124,6 +149,14 @@ transform = torchlm.LandmarksCompose([
   <img src='docs/res/537.jpg' height="100px" width="100px">
   <img src='docs/res/605.jpg' height="100px" width="100px">
   <img src='docs/res/802.jpg' height="100px" width="100px">
+<br>
+  <img src='docs/res/2_wflw_484.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_505.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_529.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_536.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_669.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_672.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_741.jpg' height="100px" width="100px">
 </div>  
 
 
@@ -145,6 +178,8 @@ BindAlbumentationsTransform(ColorJitter())() AutoDtype Info: AutoDtypeEnum.Array
 BindAlbumentationsTransform(ColorJitter())() Execution Flag: True
 BindTensorCallable(callable_tensor_noop())() AutoDtype Info: AutoDtypeEnum.Tensor_InOut
 BindTensorCallable(callable_tensor_noop())() Execution Flag: False
+Error at LandmarksRandomTranslate() Skip, Flag: False Error Info: LandmarksRandomTranslate() have 98 input landmarks, but got 96 output landmarks!
+LandmarksRandomTranslate() Execution Flag: False
 ```
 * Execution Flag: True means current transform was executed successful, False means it was not executed because of the random probability or some Runtime Exceptions(torchlm will should the error infos if debug mode is True).
 * AutoDtype Info: 
