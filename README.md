@@ -99,7 +99,7 @@ transform = torchlm.LandmarksCompose([
   <img src='docs/res/2_wflw_478.jpg' height="100px" width="100px">
 </div>  
 
-* **bind** torchvision and albumentations's transforms through **torchlm.bind**
+* **bind** **80+** torchvision and albumentations's transforms through **torchlm.bind**
 ```python
 import torchvision
 import albumentations
