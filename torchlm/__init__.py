@@ -2,7 +2,7 @@
 __version__ = '0.1.4'
 # Transforms Module: 100+ transforms available, can bind torchvision and
 # albumentations into torchlm pipeline with autodtype wrapper.
-from .transfroms import *
+from .transforms import *
 # Utils Module: some utils methods.
 from .utils import *
 # Other Modules: TODO
