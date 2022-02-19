@@ -38,14 +38,14 @@ __all__ = [
     "LandmarksRandomRotate",
     "LandmarksRandomShear",
     "LandmarksRandomHSV",
-    "LandmarksRandomMask",
     "LandmarksRandomBlur",
     "LandmarksRandomBrightness",
+    "LandmarksRandomMask",
+    "LandmarksRandomPatches",
+    "LandmarksRandomBackground",
+    "LandmarksRandomMaskMixUp",
     "LandmarksRandomPatchesMixUp",
     "LandmarksRandomBackgroundMixUp",
-    "LandmarksRandomPatchesMixUpWithAlpha",
-    "LandmarksRandomBackgroundMixUpWithAlpha",
-    "LandmarksRandomMaskWithAlpha",
     "BindAlbumentationsTransform",
     "BindTorchVisionTransform",
     "BindArrayCallable",
@@ -1270,6 +1270,8 @@ class LandmarksRandomScale(LandmarksTransform):
 
         resize_scale_x = 1 + scale_x
         resize_scale_y = 1 + scale_y
+        print(resize_scale_x)
+        print(resize_scale_y)
 
         new_img = cv2.resize(img, None, fx=resize_scale_x, fy=resize_scale_y)
 
@@ -1578,9 +1580,9 @@ class LandmarksRandomHSV(LandmarksTransform):
 
     def __init__(
             self,
-            hue: Union[Tuple[int, int], int] = None,
-            saturation: Union[Tuple[int, int], int] = None,
-            brightness: Union[Tuple[int, int], int] = None,
+            hue: Union[Tuple[int, int], int] = 20,
+            saturation: Union[Tuple[int, int], int] = 20,
+            brightness: Union[Tuple[int, int], int] = 20,
             prob: float = 0.5
     ):
         super(LandmarksRandomHSV, self).__init__()
@@ -1678,7 +1680,7 @@ class LandmarksRandomMask(LandmarksTransform):
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-class LandmarksRandomMaskWithAlpha(LandmarksTransform):
+class LandmarksRandomMaskMixUp(LandmarksTransform):
 
     def __init__(
             self,
@@ -1693,7 +1695,7 @@ class LandmarksRandomMaskWithAlpha(LandmarksTransform):
         :param trans_ratio: control the random shape of masked area.
         :param alpha: max alpha value.
         """
-        super(LandmarksRandomMaskWithAlpha, self).__init__()
+        super(LandmarksRandomMaskMixUp, self).__init__()
         assert 0.10 < mask_ratio < 1.
         assert 0 < trans_ratio < 1.
         self._mask_ratio = mask_ratio
@@ -1823,7 +1825,7 @@ class LandmarksRandomBrightness(LandmarksTransform):
         return img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-class LandmarksRandomPatchesMixUp(LandmarksTransform):
+class LandmarksRandomPatches(LandmarksTransform):
 
     def __init__(
             self,
@@ -1838,7 +1840,7 @@ class LandmarksRandomPatchesMixUp(LandmarksTransform):
         :param prob: probability
         :param trans_ratio: control the random shape of patched area.
         """
-        super(LandmarksRandomPatchesMixUp, self).__init__()
+        super(LandmarksRandomPatches, self).__init__()
         assert 0.10 < patch_ratio < 1.
         assert 0 < trans_ratio < 1.
         if patch_dirs is None:
@@ -1884,7 +1886,7 @@ class LandmarksRandomPatchesMixUp(LandmarksTransform):
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-class LandmarksRandomPatchesMixUpWithAlpha(LandmarksTransform):
+class LandmarksRandomPatchesMixUp(LandmarksTransform):
 
     def __init__(
             self,
@@ -1901,7 +1903,7 @@ class LandmarksRandomPatchesMixUpWithAlpha(LandmarksTransform):
         :param trans_ratio: control the random shape of patched area.
         :param alpha: max alpha value.
         """
-        super(LandmarksRandomPatchesMixUpWithAlpha, self).__init__()
+        super(LandmarksRandomPatchesMixUp, self).__init__()
         assert 0.10 < patch_ratio < 1.
         assert 0 < trans_ratio < 1.
         if patch_dirs is None:
@@ -1951,7 +1953,7 @@ class LandmarksRandomPatchesMixUpWithAlpha(LandmarksTransform):
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-class LandmarksRandomBackgroundMixUpWithAlpha(LandmarksTransform):
+class LandmarksRandomBackgroundMixUp(LandmarksTransform):
 
     def __init__(
             self,
@@ -1964,7 +1966,7 @@ class LandmarksRandomBackgroundMixUpWithAlpha(LandmarksTransform):
         :param prob: probability
         :param alpha: max alpha value(<=0.5)
         """
-        super(LandmarksRandomBackgroundMixUpWithAlpha, self).__init__()
+        super(LandmarksRandomBackgroundMixUp, self).__init__()
         self._prob = prob
         self._alpha = alpha
         assert 0.1 < alpha <= 0.5
@@ -2002,22 +2004,19 @@ class LandmarksRandomBackgroundMixUpWithAlpha(LandmarksTransform):
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-class LandmarksRandomBackgroundMixUp(LandmarksTransform):
+class LandmarksRandomBackground(LandmarksTransform):
 
     def __init__(
             self,
             background_dirs: List[str] = None,
-            alpha: float = 0.3,
             prob: float = 0.5
     ):
         """
         :param background_dirs: paths to background images dirs, ["xxx/xx", "xxx/xx"]
         :param prob: probability
         """
-        super(LandmarksRandomBackgroundMixUp, self).__init__()
+        super(LandmarksRandomBackground, self).__init__()
         self._prob = prob
-        self._alpha = alpha
-        assert 0.1 < alpha <= 0.5
         if background_dirs is None:
             background_dirs = [os.path.join(Path(__file__).parent, "assets")]
         self._background_paths = F.read_image_files(background_dirs)

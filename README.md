@@ -210,8 +210,7 @@ LandmarksRandomTranslate() Execution Flag: False
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 
 ## 📖 Documentations
-* [ ] Data Augmentation's API (TODO)
-* [ ] ...
+* [x] [Data Augmentation's API](docs/api/transfroms.md) 
 
 ## 🎓 License 
 The code of **torchlm** is released under the MIT License.
