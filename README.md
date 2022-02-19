@@ -30,6 +30,9 @@
   <img src='docs/res/2_wflw_478.jpg' height="100px" width="100px">
 </div>  
 
+<p align="center"> ❤️ Star 🌟👆🏻 this repo to support me if it does any helps to you, thanks ~  </p>
+
+
 # 🆕 What's New
 
 * [2022/02/13]: Add **30+** native data augmentations and **bind** **80+** transforms from torchvision and albumentations.
