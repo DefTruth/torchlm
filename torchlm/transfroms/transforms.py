@@ -1178,11 +1178,11 @@ class LandmarksRandomHorizontalFlip(LandmarksTransform):
         self.flag = True
 
         _transforms_api_logging(
-            "WARNING!!!: HorizontalFlip augmentation mirrors the input image. "
-            "When you apply that augmentation to keypoints that mark the "
-            "side of body parts (left or right), those keypoints will point "
-            "to the wrong side (since left on the mirrored image becomes right)."
-            " So when you are creating an augmentation pipeline look carefully "
+            "WARNING!!!: HorizontalFlip augmentation mirrors the input image.\n "
+            "When you apply that augmentation to keypoints that mark the\n "
+            "side of body parts (left or right), those keypoints will point\n "
+            "to the wrong side (since left on the mirrored image becomes right).\n"
+            " So when you are creating an augmentation pipeline look carefully\n"
             "which augmentations could be applied to the input data. Also see:\n "
             "https://albumentations.ai/docs/getting_started/keypoints_augmentation/"
         )
@@ -1213,11 +1213,11 @@ class LandmarksHorizontalFlip(LandmarksTransform):
         self.flag = True
 
         _transforms_api_logging(
-            "WARNING!!!: HorizontalFlip augmentation mirrors the input image. "
-            "When you apply that augmentation to keypoints that mark the "
-            "side of body parts (left or right), those keypoints will point "
-            "to the wrong side (since left on the mirrored image becomes right)."
-            " So when you are creating an augmentation pipeline look carefully "
+            "WARNING!!!: HorizontalFlip augmentation mirrors the input image.\n "
+            "When you apply that augmentation to keypoints that mark the\n"
+            "side of body parts (left or right), those keypoints will point\n "
+            "to the wrong side (since left on the mirrored image becomes right).\n"
+            " So when you are creating an augmentation pipeline look carefully\n"
             "which augmentations could be applied to the input data. Also see:\n "
             "https://albumentations.ai/docs/getting_started/keypoints_augmentation/"
         )
