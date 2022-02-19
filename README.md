@@ -8,6 +8,7 @@
   <img src=https://img.shields.io/badge/macos|linux|windows-pass-skyblue.svg >
   <img src=https://img.shields.io/badge/license-MIT-lightblue.svg >
 </div>   
+<p align="center">English | <a href="docs/api/transforms.md">中文文档</a></p>
 
 
 ## 🤗 Introduction
@@ -194,7 +195,7 @@ LandmarksRandomTranslate() Execution Flag: False
   But, is ok if you pass a Tensor to a np.ndarray-like transform, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper.
 
 
-* Supported Transforms Sets, see [transforms.md](https://github.com/DefTruth/torchlm/blob/main/docs/api/transfroms.md). A detail example can be found at [test/transforms.py](https://github.com/DefTruth/torchlm/blob/main/test/transforms.py).
+* Supported Transforms Sets, see [transforms.md](docs/api/transforms.md). A detail example can be found at [test/transforms.py](test/transforms.py).
 
 ### Training(TODO)
 * [ ] YOLOX
@@ -210,7 +211,7 @@ LandmarksRandomTranslate() Execution Flag: False
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 
 ## 📖 Documentations
-* [x] [Data Augmentation's API](docs/api/transfroms.md) 
+* [x] [Data Augmentation's API](docs/api/transforms.md) 
 
 ## 🎓 License 
 The code of **torchlm** is released under the MIT License.
