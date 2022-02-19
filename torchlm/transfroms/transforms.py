@@ -1,3 +1,5 @@
+import os
+
 import cv2
 import math
 import torch
@@ -6,6 +8,7 @@ import numpy as np
 import torchvision
 import albumentations
 from torch import Tensor
+from pathlib import Path
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Union, List, Optional, Callable, Any
 
@@ -1824,7 +1827,7 @@ class LandmarksRandomPatchesMixUp(LandmarksTransform):
 
     def __init__(
             self,
-            patch_dirs: List[str],
+            patch_dirs: List[str] = None,
             patch_ratio: float = 0.15,
             prob: float = 0.5,
             trans_ratio: float = 0.5
@@ -1838,6 +1841,8 @@ class LandmarksRandomPatchesMixUp(LandmarksTransform):
         super(LandmarksRandomPatchesMixUp, self).__init__()
         assert 0.10 < patch_ratio < 1.
         assert 0 < trans_ratio < 1.
+        if patch_dirs is None:
+            patch_dirs = [os.path.join(Path(__file__).parent, "assets")]
         self._patch_ratio = patch_ratio
         self._trans_ratio = trans_ratio
         self._prob = prob
@@ -1883,7 +1888,7 @@ class LandmarksRandomPatchesMixUpWithAlpha(LandmarksTransform):
 
     def __init__(
             self,
-            patch_dirs: List[str],
+            patch_dirs: List[str] = None,
             patch_ratio: float = 0.2,
             prob: float = 0.5,
             trans_ratio: float = 0.5,
@@ -1899,6 +1904,8 @@ class LandmarksRandomPatchesMixUpWithAlpha(LandmarksTransform):
         super(LandmarksRandomPatchesMixUpWithAlpha, self).__init__()
         assert 0.10 < patch_ratio < 1.
         assert 0 < trans_ratio < 1.
+        if patch_dirs is None:
+            patch_dirs = [os.path.join(Path(__file__).parent, "assets")]
         self._patch_ratio = patch_ratio
         self._trans_ratio = trans_ratio
         self._prob = prob
@@ -1948,7 +1955,7 @@ class LandmarksRandomBackgroundMixUpWithAlpha(LandmarksTransform):
 
     def __init__(
             self,
-            background_dirs: List[str],
+            background_dirs: List[str] = None,
             alpha: float = 0.3,
             prob: float = 0.5
     ):
@@ -1961,6 +1968,8 @@ class LandmarksRandomBackgroundMixUpWithAlpha(LandmarksTransform):
         self._prob = prob
         self._alpha = alpha
         assert 0.1 < alpha <= 0.5
+        if background_dirs is None:
+            background_dirs = [os.path.join(Path(__file__).parent, "assets")]
         self._background_paths = F.read_image_files(background_dirs)
 
     @autodtype(AutoDtypeEnum.Array_InOut)
@@ -1997,7 +2006,7 @@ class LandmarksRandomBackgroundMixUp(LandmarksTransform):
 
     def __init__(
             self,
-            background_dirs: List[str],
+            background_dirs: List[str] = None,
             alpha: float = 0.3,
             prob: float = 0.5
     ):
@@ -2009,6 +2018,8 @@ class LandmarksRandomBackgroundMixUp(LandmarksTransform):
         self._prob = prob
         self._alpha = alpha
         assert 0.1 < alpha <= 0.5
+        if background_dirs is None:
+            background_dirs = [os.path.join(Path(__file__).parent, "assets")]
         self._background_paths = F.read_image_files(background_dirs)
 
     @autodtype(AutoDtypeEnum.Array_InOut)
