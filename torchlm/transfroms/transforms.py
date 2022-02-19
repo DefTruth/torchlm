@@ -71,6 +71,7 @@ def _transforms_api_logging(info: str):
     global TransformLoggingMode
     if TransformLoggingMode: print(info)
 
+
 def _transforms_api_debug(error: Exception):
     global TransformDebugMode
     if TransformDebugMode: raise error
@@ -135,6 +136,14 @@ class LandmarksTransform(object):
         self.trans_x = 0.
         self.trans_y = 0.
         self.flag = False
+
+
+def _transforms_api_assert(self: LandmarksTransform, cond: bool, info: str = None):
+    if cond:
+        self.flag = False  # flag is a reference of some specific flag
+        if info is None:
+            info = f"{self}() missing landmarks"
+        raise F.Error(info)
 
 
 TorchVision_Transform_Type = torch.nn.Module
@@ -359,13 +368,14 @@ class BindAlbumentationsTransform(LandmarksTransform):
                 trans_kps = trans_kps.reshape(kps_num, 2)
                 landmarks[:, :2] = trans_kps
                 img = trans_img
+                self.flag = True
             else:
+                self.flag = False
                 _transforms_api_logging(
                     f"{self}() Missing landmarks after transform, "
                     f"expect {kps_num} but got {len(trans_kps)},"
                     f"skip this transform"
                 )
-            self.flag = True
             # changed nothings if any kps been outside
             return img.astype(np.uint8), landmarks.astype(np.float32)
         except:
@@ -423,14 +433,15 @@ class BindArrayCallable(LandmarksTransform):
             if trans_kps.shape[0] == kps_num:
                 img = trans_img
                 landmarks = trans_kps
+                self.flag = True
             else:
+                self.flag = False
                 _transforms_api_logging(
                     f"{self}() Missing landmarks after transform, "
                     f"expect {kps_num} but got {trans_kps.shape[0]},"
                     f"skip this transform"
                 )
             # changed nothings if any kps has been outside
-            self.flag = True
             return img.astype(np.int32), landmarks.astype(np.float32)
 
         except:
@@ -478,14 +489,15 @@ class BindTensorCallable(LandmarksTransform):
             if trans_kps.size()[0] == kps_num:
                 img = trans_img
                 landmarks = trans_kps
+                self.flag = True
             else:
+                self.flag = False
                 _transforms_api_logging(
                     f"{self}() Missing landmarks after transform, "
                     f"expect {kps_num} but got {trans_kps.size()[0]},"
                     f"skip this transform"
                 )
             # changed nothings if any kps has been outside
-            self.flag = True
             return img, landmarks
         except:
             self.flag = False
@@ -581,7 +593,7 @@ class LandmarksCompose(object):
             except Exception as e:
                 _transforms_api_logging(f"Error at {t}() Skip, Flag: "
                                         f"{t.flag} Error Info: {e}")
-                _transforms_api_debug(e) # after logging
+                _transforms_api_debug(e)  # after logging
                 continue
             finally:
                 _transforms_api_logging(f"{t}() Execution Flag: {t.flag}")
@@ -806,10 +818,10 @@ class LandmarksResize(LandmarksTransform):
             self.scale_x = scale_x
             self.scale_y = scale_y
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksResize: {0} input landmarks, but got {1} output '
-                          'landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
@@ -957,10 +969,10 @@ class LandmarksAlign(LandmarksTransform):
         self.scale_x = (1 / scale_factor_x)
         self.scale_y = (1 / scale_factor_y)
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksAlign: {0} input landmarks, but got {1} output '
-                          'landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
@@ -1039,10 +1051,10 @@ class LandmarksRandomAlign(LandmarksTransform):
         self.scale_x = (1 / scale_factor_x)
         self.scale_y = (1 / scale_factor_y)
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksAlign: {0} input landmarks, but got {1} output '
-                          'landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
@@ -1258,10 +1270,10 @@ class LandmarksRandomScale(LandmarksTransform):
         self.scale_x = resize_scale_x
         self.scale_y = resize_scale_y
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksRandomScale: {0} input landmarks, but got {1} output '
-                          'landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
@@ -1348,10 +1360,10 @@ class LandmarksRandomTranslate(LandmarksTransform):
                                               img_w=new_img.shape[1],
                                               img_h=new_img.shape[0])
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksRandomTranslate: {0} input landmarks, but got {1} '
-                          'output landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         # TODO: add translate affine records
         self.flag = True
@@ -1435,12 +1447,10 @@ class LandmarksRandomRotate(LandmarksTransform):
         self.scale_x = (1 / scale_factor_x)
         self.scale_y = (1 / scale_factor_y)
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error(
-                'LandmarksRandomRotate: {0} input landmarks, but got {1} output '
-                'landmarks'.format(num_landmarks, len(new_landmarks))
-            )
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         # TODO: add rotate affine records
         self.flag = True
@@ -1518,12 +1528,10 @@ class LandmarksRandomShear(LandmarksTransform):
         self.scale_x = (1. / scale_factor_x)
         self.scale_y = 1.
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error(
-                'LandmarksRandomShear: {0} input landmarks, but got {1} output '
-                'landmarks'.format(num_landmarks, len(new_landmarks))
-            )
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
