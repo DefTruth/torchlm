@@ -477,11 +477,11 @@ transform = torchlm.LandmarksCompose([
 <div align='center'>
   <img src='../res/2_wflw_orginal.jpg' height="100px" width="100px">
   <img src='../res/2_wflw_brightness_247.jpg' height="100px" width="100px">
-  <img src='../res/2_wflw_brightness_247.jpg' height="100px" width="100px">
-  <img src='../res/2_wflw_brightness_247.jpg' height="100px" width="100px">
-  <img src='../res/2_wflw_brightness_247.jpg' height="100px" width="100px">
-  <img src='../res/2_wflw_brightness_247.jpg' height="100px" width="100px">
-  <img src='../res/2_wflw_brightness_247.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_brightness_249.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_brightness_359.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_brightness_379.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_brightness_409.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_brightness_472.jpg' height="100px" width="100px">
 </div>  
 
 * LandmarksRandomMask: 随机遮挡变换。从给定的mask面积比率范围内随机选择一个面积比率，在原图上随机选一块该面积大小，矩形形状随机的方块进行mask，并且mask的值也是随机的。该变换是image-only变换，不改变landmarks的坐标位置。初始化参数说明，mask_ratio: float，遮挡的比率最大值，默认0.1，指被遮挡区域占输入图片的面积的比率；prob: float，默认0.5，发生的概率；trans_ratio: float，默认0.5，控制mask区域的随机形状，用默认值行。
