@@ -2044,8 +2044,15 @@ class LandmarksRandomBackgroundMixUp(LandmarksTransform):
             self.flag = False
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
-        new_img = F.apply_background(img=img, background=background)
+        num_landmarks = len(landmarks)
+        new_img, new_landmarks = F.apply_background(
+            img=img, background=background, landmarks=landmarks)
+
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
-        return new_img.astype(np.uint8), landmarks.astype(np.float32)
+        return new_img.astype(np.uint8), new_landmarks.astype(np.float32)
