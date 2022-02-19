@@ -574,6 +574,230 @@ class LandmarksCompose(object):
             transforms: List[LandmarksTransform]
     ):
 ```  
+### Usage 
+#### 使用torchlm中的数据增强方法
+一个示例性质的pipeline如下所示，用法很简单。
+```python
+import torchlm
+transform = torchlm.LandmarksCompose([
+        # use native torchlm transforms
+        torchlm.LandmarksRandomScale(prob=0.5),
+        torchlm.LandmarksRandomTranslate(prob=0.5),
+        torchlm.LandmarksRandomShear(prob=0.5),
+        torchlm.LandmarksRandomMask(prob=0.5),
+        torchlm.LandmarksRandomBlur(kernel_range=(5, 25), prob=0.5),
+        torchlm.LandmarksRandomBrightness(prob=0.),
+        torchlm.LandmarksRandomRotate(40, prob=0.5, bins=8),
+        torchlm.LandmarksRandomCenterCrop((0.5, 1.0), (0.5, 1.0), prob=0.5),
+        # ...
+    ])
+```
+
+#### 绑定torchvision和albumentations的数据增强方法
+通过torchlm.bind可以一行代码兼容torchvision和albumentations的数据增强方法，并且自动处理数据类型转换和数据“安全性”检查。
+```python
+import torchvision
+import albumentations
+import torchlm
+transform = torchlm.LandmarksCompose([
+        # use native torchlm transforms
+        torchlm.LandmarksRandomScale(prob=0.5),
+        # bind torchvision image only transforms, bind with a given prob
+        torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),  
+        torchlm.bind(torchvision.transforms.RandomAutocontrast(p=0.5)),
+        # bind albumentations image only transforms
+        torchlm.bind(albumentations.ColorJitter(p=0.5)),
+        torchlm.bind(albumentations.GlassBlur(p=0.5)),
+        # bind albumentations dual transforms
+        torchlm.bind(albumentations.RandomCrop(height=200, width=200, p=0.5)),
+        torchlm.bind(albumentations.Rotate(p=0.5)),
+        # ...
+    ])
+```
+<div align='center'>
+  <img src='../res/605.jpg' height="100px" width="100px">
+  <img src='../res/802.jpg' height="100px" width="100px">
+  <img src='../res/92.jpg' height="100px" width="100px">
+  <img src='../res/234.jpg' height="100px" width="100px">
+  <img src='../res/906.jpg' height="100px" width="100px">
+  <img src='../res/825.jpg' height="100px" width="100px">
+  <img src='../res/388.jpg' height="100px" width="100px">
+  <br>
+  <img src='../res/2_wflw_44.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_67.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_76.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_162.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_229.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_440.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_478.jpg' height="100px" width="100px">
+</div>  
+
+#### 绑定用户自定义的数据增强方法
+还可以通过torchlm.bind可以一行代码绑定用户自定义的数据增强方法，并且自动处理数据类型转换和数据“安全性”检查。
+```python
+# First, defined your custom functions
+def callable_array_noop(img: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    # do some transform here ...
+    return img.astype(np.uint32), landmarks.astype(np.float32)
+
+def callable_tensor_noop(img: Tensor, landmarks: Tensor) -> Tuple[Tensor, Tensor]:
+    # do some transform here ...
+    return img, landmarks
+```
+
+```python
+# Then, bind your functions and put it into the transforms pipeline.
+transform = torchlm.LandmarksCompose([
+        # use native torchlm transforms
+        torchlm.LandmarksRandomScale(prob=0.5),
+        # bind custom callable array functions
+        torchlm.bind(callable_array_noop, bind_type=torchlm.BindEnum.Callable_Array),
+        # bind custom callable Tensor functions with a given prob
+        torchlm.bind(callable_tensor_noop, bind_type=torchlm.BindEnum.Callable_Tensor, prob=0.5),  
+        # ...
+    ])
+```
+
+#### torchlm的全局调试设置 
+通过设置一些全局选项，方便你对数据增强进行调试，以便定位到底是哪里出了问题。
+```python
+import torchlm
+# some global setting
+torchlm.set_transforms_debug(True)
+torchlm.set_transforms_logging(True)
+torchlm.set_autodtype_logging(True)
+```
+如果设置了这些全局选项为True，那么每次数据增强的pipeline在运行时，都会输出一些有用的信息，辅助你进行判断和检查。
+```text
+LandmarksRandomScale() AutoDtype Info: AutoDtypeEnum.Array_InOut
+LandmarksRandomScale() Execution Flag: False
+BindTorchVisionTransform(GaussianBlur())() AutoDtype Info: AutoDtypeEnum.Tensor_InOut
+BindTorchVisionTransform(GaussianBlur())() Execution Flag: True
+BindAlbumentationsTransform(ColorJitter())() AutoDtype Info: AutoDtypeEnum.Array_InOut
+BindAlbumentationsTransform(ColorJitter())() Execution Flag: True
+BindTensorCallable(callable_tensor_noop())() AutoDtype Info: AutoDtypeEnum.Tensor_InOut
+BindTensorCallable(callable_tensor_noop())() Execution Flag: False
+Error at LandmarksRandomTranslate() Skip, Flag: False Error Info: LandmarksRandomTranslate() have 98 input landmarks, but got 96 output landmarks!
+LandmarksRandomTranslate() Execution Flag: False
+```
+* Execution Flag: True 表示该变换被成功执行, False 则表示没有被成功执行，这可能是由于随机概率被跳过了，也可能是出现了运行时异常 (当debug mode 是 True 时，torchlm会中断pipeline并抛出详细的异常信息).
+* AutoDtype Info: 
+  * Array_InOut 意味着当前的变换需要 np.ndnarray 作为输入，并且输出 np.ndarray.
+  * Tensor_InOut 意味着当前的变换需要 Tensor 作为输入，并且输出 Tensor.
+  * Array_In 意味着当前的变换需要 np.ndnarray 作为输入，并且输出 Tensor.
+  * Tensor_In 意味着当前的变换需要 Tensor 作为输入，并且输出 np.ndarray. 
+    
+  
+  如果你不小心往一个需要numpy数组输入的变换传了Tensor，也是没有影响的，**torchlm** 会通过 **autodtype** 装饰器自动兼容不同的数据类型，并且在变换完成后，自动地将输出的数据转换为原来的类型。
+
+#### 一个torchlm关键点数据增强的完整案例
+```python
+import cv2
+import numpy as np
+import torchvision
+import albumentations
+from torch import Tensor
+from typing import Tuple
+
+import torchlm
+
+def callable_array_noop(
+        img: np.ndarray,
+        landmarks: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
+    # Do some transform here ...
+    return img.astype(np.uint32), landmarks.astype(np.float32)
+
+
+def callable_tensor_noop(
+        img: Tensor,
+        landmarks: Tensor
+) -> Tuple[Tensor, Tensor]:
+    # Do some transform here ...
+    return img, landmarks
+
+
+def test_torchlm_transforms_pipeline():
+    print(f"torchlm version: {torchlm.__version__}")
+    seed = np.random.randint(0, 1000)
+    np.random.seed(seed)
+
+    img_path = "./2.jpg"
+    anno_path = "./2.txt"
+    save_path = f"./logs/2_wflw_{seed}.jpg"
+    img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
+    with open(anno_path, 'r') as fr:
+        lm_info = fr.readlines()[0].strip('\n').split(' ')
+
+    landmarks = [float(x) for x in lm_info[:196]]
+    landmarks = np.array(landmarks).reshape(98, 2)  # (5,2) or (98, 2) for WFLW
+
+    # some global setting will show you useful details
+    torchlm.set_transforms_debug(True)
+    torchlm.set_transforms_logging(True)
+    torchlm.set_autodtype_logging(True)
+
+    transform = torchlm.LandmarksCompose([
+        # use native torchlm transforms
+        torchlm.LandmarksRandomScale(prob=0.5),
+        torchlm.LandmarksRandomTranslate(prob=0.5),
+        torchlm.LandmarksRandomShear(prob=0.5),
+        torchlm.LandmarksRandomMask(prob=0.5),
+        torchlm.LandmarksRandomBlur(kernel_range=(5, 25), prob=0.5),
+        torchlm.LandmarksRandomBrightness(prob=0.),
+        torchlm.LandmarksRandomRotate(40, prob=0.5, bins=8),
+        torchlm.LandmarksRandomCenterCrop((0.5, 1.0), (0.5, 1.0), prob=0.5),
+        # bind torchvision image only transforms with a given bind prob
+        torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),
+        torchlm.bind(torchvision.transforms.RandomAutocontrast(p=0.5)),
+        torchlm.bind(torchvision.transforms.RandomAdjustSharpness(sharpness_factor=3, p=0.5)),
+        # bind albumentations image only transforms
+        torchlm.bind(albumentations.ColorJitter(p=0.5)),
+        torchlm.bind(albumentations.GlassBlur(p=0.5)),
+        torchlm.bind(albumentations.RandomShadow(p=0.5)),
+        # bind albumentations dual transforms
+        torchlm.bind(albumentations.RandomCrop(height=200, width=200, p=0.5)),
+        torchlm.bind(albumentations.RandomScale(p=0.5)),
+        torchlm.bind(albumentations.Rotate(p=0.5)),
+        # bind custom callable array functions with a given bind prob
+        torchlm.bind(callable_array_noop, bind_type=torchlm.BindEnum.Callable_Array, prob=0.5),
+        # bind custom callable Tensor functions
+        torchlm.bind(callable_tensor_noop, bind_type=torchlm.BindEnum.Callable_Tensor, prob=0.5),
+        torchlm.LandmarksResize((256, 256)),
+        torchlm.LandmarksNormalize(),
+        torchlm.LandmarksToTensor(),
+        torchlm.LandmarksToNumpy(),
+        torchlm.LandmarksUnNormalize()
+    ])
+
+    trans_img, trans_landmarks = transform(img, landmarks)
+    new_img = torchlm.draw_landmarks(trans_img, trans_landmarks, circle=2)
+    cv2.imwrite(save_path, new_img[:, :, ::-1])
+
+    # unset the global status when you are in training process
+    torchlm.set_transforms_debug(False)
+    torchlm.set_transforms_logging(False)
+    torchlm.set_autodtype_logging(False)
+```
+<div align='center'>
+  <img src='../res/124.jpg' height="100px" width="100px">
+  <img src='../res/158.jpg' height="100px" width="100px">
+  <img src='../res/386.jpg' height="100px" width="100px">
+  <img src='../res/478.jpg' height="100px" width="100px">
+  <img src='../res/537.jpg' height="100px" width="100px">
+  <img src='../res/605.jpg' height="100px" width="100px">
+  <img src='../res/802.jpg' height="100px" width="100px">
+<br>
+  <img src='../res/2_wflw_484.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_505.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_529.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_536.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_669.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_672.jpg' height="100px" width="100px">
+  <img src='../res/2_wflw_741.jpg' height="100px" width="100px">
+</div>  
+
+你看，现在整个数据增强的pipeline是不是优雅很多了，无论是**torchlm**原生的transforms，还是来自torchvision和albumentations的transforms，都可以很自然地放到一个流程里面来了，顺眼多了。也不用去管输入是numpy数组还是Tensor了。而且，当你想要自定义一个关键点数据增强的方法放入到整个pipeline时，需要做的，仅仅就是定义好这个方法。**torchlm.bind**帮你处理了很多边边角角的事情。
 
 ## Native torchlm's Transforms
 <div id="torchlm-native-transforms"></div>  
