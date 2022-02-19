@@ -8,12 +8,12 @@ def get_long_description():
     description = (PATH_ROOT / "README.md").read_text(encoding="utf-8")
     # replace relative repository path to absolute link to the release
     static_url = f"https://github.com/DefTruth/torchlm/blob/main/"
-    description = description.replace("docs/res/", f"{static_url}/docs/res/")
+    description = description.replace("/docs/res/", f"{static_url}/docs/res/")
     return description
 
 setuptools.setup(
     name="torchlm",
-    version="0.1.3",
+    version="0.1.4",
     author="DefTruth",
     author_email="qyjdef@163.com",
     description="A PyTorch landmarks-only library with 100+ data augmentations, "

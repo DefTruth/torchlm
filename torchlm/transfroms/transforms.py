@@ -1,3 +1,5 @@
+import os
+
 import cv2
 import math
 import torch
@@ -6,6 +8,7 @@ import numpy as np
 import torchvision
 import albumentations
 from torch import Tensor
+from pathlib import Path
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Union, List, Optional, Callable, Any
 
@@ -38,10 +41,10 @@ __all__ = [
     "LandmarksRandomMask",
     "LandmarksRandomBlur",
     "LandmarksRandomBrightness",
-    "LandmarksRandomPatches",
-    "LandmarksRandomBackground",
-    "LandmarksRandomPatchesWithAlpha",
-    "LandmarksRandomBackgroundWithAlpha",
+    "LandmarksRandomPatchesMixUp",
+    "LandmarksRandomBackgroundMixUp",
+    "LandmarksRandomPatchesMixUpWithAlpha",
+    "LandmarksRandomBackgroundMixUpWithAlpha",
     "LandmarksRandomMaskWithAlpha",
     "BindAlbumentationsTransform",
     "BindTorchVisionTransform",
@@ -70,6 +73,7 @@ def set_transforms_debug(debug: bool = False):
 def _transforms_api_logging(info: str):
     global TransformLoggingMode
     if TransformLoggingMode: print(info)
+
 
 def _transforms_api_debug(error: Exception):
     global TransformDebugMode
@@ -135,6 +139,14 @@ class LandmarksTransform(object):
         self.trans_x = 0.
         self.trans_y = 0.
         self.flag = False
+
+
+def _transforms_api_assert(self: LandmarksTransform, cond: bool, info: str = None):
+    if cond:
+        self.flag = False  # flag is a reference of some specific flag
+        if info is None:
+            info = f"{self}() missing landmarks"
+        raise F.Error(info)
 
 
 TorchVision_Transform_Type = torch.nn.Module
@@ -359,13 +371,14 @@ class BindAlbumentationsTransform(LandmarksTransform):
                 trans_kps = trans_kps.reshape(kps_num, 2)
                 landmarks[:, :2] = trans_kps
                 img = trans_img
+                self.flag = True
             else:
+                self.flag = False
                 _transforms_api_logging(
                     f"{self}() Missing landmarks after transform, "
                     f"expect {kps_num} but got {len(trans_kps)},"
                     f"skip this transform"
                 )
-            self.flag = True
             # changed nothings if any kps been outside
             return img.astype(np.uint8), landmarks.astype(np.float32)
         except:
@@ -423,14 +436,15 @@ class BindArrayCallable(LandmarksTransform):
             if trans_kps.shape[0] == kps_num:
                 img = trans_img
                 landmarks = trans_kps
+                self.flag = True
             else:
+                self.flag = False
                 _transforms_api_logging(
                     f"{self}() Missing landmarks after transform, "
                     f"expect {kps_num} but got {trans_kps.shape[0]},"
                     f"skip this transform"
                 )
             # changed nothings if any kps has been outside
-            self.flag = True
             return img.astype(np.int32), landmarks.astype(np.float32)
 
         except:
@@ -478,14 +492,15 @@ class BindTensorCallable(LandmarksTransform):
             if trans_kps.size()[0] == kps_num:
                 img = trans_img
                 landmarks = trans_kps
+                self.flag = True
             else:
+                self.flag = False
                 _transforms_api_logging(
                     f"{self}() Missing landmarks after transform, "
                     f"expect {kps_num} but got {trans_kps.size()[0]},"
                     f"skip this transform"
                 )
             # changed nothings if any kps has been outside
-            self.flag = True
             return img, landmarks
         except:
             self.flag = False
@@ -581,7 +596,7 @@ class LandmarksCompose(object):
             except Exception as e:
                 _transforms_api_logging(f"Error at {t}() Skip, Flag: "
                                         f"{t.flag} Error Info: {e}")
-                _transforms_api_debug(e) # after logging
+                _transforms_api_debug(e)  # after logging
                 continue
             finally:
                 _transforms_api_logging(f"{t}() Execution Flag: {t.flag}")
@@ -806,10 +821,10 @@ class LandmarksResize(LandmarksTransform):
             self.scale_x = scale_x
             self.scale_y = scale_y
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksResize: {0} input landmarks, but got {1} output '
-                          'landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
@@ -957,10 +972,10 @@ class LandmarksAlign(LandmarksTransform):
         self.scale_x = (1 / scale_factor_x)
         self.scale_y = (1 / scale_factor_y)
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksAlign: {0} input landmarks, but got {1} output '
-                          'landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
@@ -1039,10 +1054,10 @@ class LandmarksRandomAlign(LandmarksTransform):
         self.scale_x = (1 / scale_factor_x)
         self.scale_y = (1 / scale_factor_y)
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksAlign: {0} input landmarks, but got {1} output '
-                          'landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
@@ -1128,13 +1143,6 @@ class LandmarksRandomCenterCrop(LandmarksTransform):
 
 
 class LandmarksRandomHorizontalFlip(LandmarksTransform):
-    """WARNING: HorizontalFlip augmentation mirrors the input image. When you apply
-     that augmentation to keypoints that mark the side of body parts (left or right),
-     those keypoints will point to the wrong side (since left on the mirrored image
-     becomes right). So when you are creating an augmentation pipeline look carefully
-     which augmentations could be applied to the input data. Also see:
-     https://albumentations.ai/docs/getting_started/keypoints_augmentation/
-    """
 
     def __init__(
             self,
@@ -1169,17 +1177,20 @@ class LandmarksRandomHorizontalFlip(LandmarksTransform):
 
         self.flag = True
 
+        _transforms_api_logging(
+            "WARNING!!!: HorizontalFlip augmentation mirrors the input image.\n "
+            "When you apply that augmentation to keypoints that mark the\n "
+            "side of body parts (left or right), those keypoints will point\n "
+            "to the wrong side (since left on the mirrored image becomes right).\n"
+            " So when you are creating an augmentation pipeline look carefully\n"
+            "which augmentations could be applied to the input data. Also see:\n "
+            "https://albumentations.ai/docs/getting_started/keypoints_augmentation/"
+        )
+
         return new_img.astype(np.uint8), new_landmarks.astype(np.float32)
 
 
 class LandmarksHorizontalFlip(LandmarksTransform):
-    """WARNING: HorizontalFlip augmentation mirrors the input image. When you apply
-     that augmentation to keypoints that mark the side of body parts (left or right),
-     those keypoints will point to the wrong side (since left on the mirrored image
-     becomes right). So when you are creating an augmentation pipeline look carefully
-     which augmentations could be applied to the input data. Also see:
-     https://albumentations.ai/docs/getting_started/keypoints_augmentation/
-    """
 
     def __init__(self):
         super(LandmarksHorizontalFlip, self).__init__()
@@ -1200,6 +1211,16 @@ class LandmarksHorizontalFlip(LandmarksTransform):
         new_landmarks[:, 0] += 2 * (cx - new_landmarks[:, 0])
 
         self.flag = True
+
+        _transforms_api_logging(
+            "WARNING!!!: HorizontalFlip augmentation mirrors the input image.\n "
+            "When you apply that augmentation to keypoints that mark the\n"
+            "side of body parts (left or right), those keypoints will point\n "
+            "to the wrong side (since left on the mirrored image becomes right).\n"
+            " So when you are creating an augmentation pipeline look carefully\n"
+            "which augmentations could be applied to the input data. Also see:\n "
+            "https://albumentations.ai/docs/getting_started/keypoints_augmentation/"
+        )
 
         return new_img.astype(np.uint8), new_landmarks.astype(np.float32)
 
@@ -1258,10 +1279,10 @@ class LandmarksRandomScale(LandmarksTransform):
         self.scale_x = resize_scale_x
         self.scale_y = resize_scale_y
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksRandomScale: {0} input landmarks, but got {1} output '
-                          'landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
@@ -1348,10 +1369,10 @@ class LandmarksRandomTranslate(LandmarksTransform):
                                               img_w=new_img.shape[1],
                                               img_h=new_img.shape[0])
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error('LandmarksRandomTranslate: {0} input landmarks, but got {1} '
-                          'output landmarks'.format(num_landmarks, len(new_landmarks)))
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         # TODO: add translate affine records
         self.flag = True
@@ -1435,12 +1456,10 @@ class LandmarksRandomRotate(LandmarksTransform):
         self.scale_x = (1 / scale_factor_x)
         self.scale_y = (1 / scale_factor_y)
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error(
-                'LandmarksRandomRotate: {0} input landmarks, but got {1} output '
-                'landmarks'.format(num_landmarks, len(new_landmarks))
-            )
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         # TODO: add rotate affine records
         self.flag = True
@@ -1518,12 +1537,10 @@ class LandmarksRandomShear(LandmarksTransform):
         self.scale_x = (1. / scale_factor_x)
         self.scale_y = 1.
 
-        if len(new_landmarks) != num_landmarks:
-            self.flag = False
-            raise F.Error(
-                'LandmarksRandomShear: {0} input landmarks, but got {1} output '
-                'landmarks'.format(num_landmarks, len(new_landmarks))
-            )
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
@@ -1806,11 +1823,11 @@ class LandmarksRandomBrightness(LandmarksTransform):
         return img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-class LandmarksRandomPatches(LandmarksTransform):
+class LandmarksRandomPatchesMixUp(LandmarksTransform):
 
     def __init__(
             self,
-            patch_dirs: List[str],
+            patch_dirs: List[str] = None,
             patch_ratio: float = 0.15,
             prob: float = 0.5,
             trans_ratio: float = 0.5
@@ -1821,9 +1838,11 @@ class LandmarksRandomPatches(LandmarksTransform):
         :param prob: probability
         :param trans_ratio: control the random shape of patched area.
         """
-        super(LandmarksRandomPatches, self).__init__()
+        super(LandmarksRandomPatchesMixUp, self).__init__()
         assert 0.10 < patch_ratio < 1.
         assert 0 < trans_ratio < 1.
+        if patch_dirs is None:
+            patch_dirs = [os.path.join(Path(__file__).parent, "assets")]
         self._patch_ratio = patch_ratio
         self._trans_ratio = trans_ratio
         self._prob = prob
@@ -1865,11 +1884,11 @@ class LandmarksRandomPatches(LandmarksTransform):
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-class LandmarksRandomPatchesWithAlpha(LandmarksTransform):
+class LandmarksRandomPatchesMixUpWithAlpha(LandmarksTransform):
 
     def __init__(
             self,
-            patch_dirs: List[str],
+            patch_dirs: List[str] = None,
             patch_ratio: float = 0.2,
             prob: float = 0.5,
             trans_ratio: float = 0.5,
@@ -1882,9 +1901,11 @@ class LandmarksRandomPatchesWithAlpha(LandmarksTransform):
         :param trans_ratio: control the random shape of patched area.
         :param alpha: max alpha value.
         """
-        super(LandmarksRandomPatchesWithAlpha, self).__init__()
+        super(LandmarksRandomPatchesMixUpWithAlpha, self).__init__()
         assert 0.10 < patch_ratio < 1.
         assert 0 < trans_ratio < 1.
+        if patch_dirs is None:
+            patch_dirs = [os.path.join(Path(__file__).parent, "assets")]
         self._patch_ratio = patch_ratio
         self._trans_ratio = trans_ratio
         self._prob = prob
@@ -1930,11 +1951,11 @@ class LandmarksRandomPatchesWithAlpha(LandmarksTransform):
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-class LandmarksRandomBackgroundWithAlpha(LandmarksTransform):
+class LandmarksRandomBackgroundMixUpWithAlpha(LandmarksTransform):
 
     def __init__(
             self,
-            background_dirs: List[str],
+            background_dirs: List[str] = None,
             alpha: float = 0.3,
             prob: float = 0.5
     ):
@@ -1943,10 +1964,12 @@ class LandmarksRandomBackgroundWithAlpha(LandmarksTransform):
         :param prob: probability
         :param alpha: max alpha value(<=0.5)
         """
-        super(LandmarksRandomBackgroundWithAlpha, self).__init__()
+        super(LandmarksRandomBackgroundMixUpWithAlpha, self).__init__()
         self._prob = prob
         self._alpha = alpha
         assert 0.1 < alpha <= 0.5
+        if background_dirs is None:
+            background_dirs = [os.path.join(Path(__file__).parent, "assets")]
         self._background_paths = F.read_image_files(background_dirs)
 
     @autodtype(AutoDtypeEnum.Array_InOut)
@@ -1979,11 +2002,11 @@ class LandmarksRandomBackgroundWithAlpha(LandmarksTransform):
         return new_img.astype(np.uint8), landmarks.astype(np.float32)
 
 
-class LandmarksRandomBackground(LandmarksTransform):
+class LandmarksRandomBackgroundMixUp(LandmarksTransform):
 
     def __init__(
             self,
-            background_dirs: List[str],
+            background_dirs: List[str] = None,
             alpha: float = 0.3,
             prob: float = 0.5
     ):
@@ -1991,10 +2014,12 @@ class LandmarksRandomBackground(LandmarksTransform):
         :param background_dirs: paths to background images dirs, ["xxx/xx", "xxx/xx"]
         :param prob: probability
         """
-        super(LandmarksRandomBackground, self).__init__()
+        super(LandmarksRandomBackgroundMixUp, self).__init__()
         self._prob = prob
         self._alpha = alpha
         assert 0.1 < alpha <= 0.5
+        if background_dirs is None:
+            background_dirs = [os.path.join(Path(__file__).parent, "assets")]
         self._background_paths = F.read_image_files(background_dirs)
 
     @autodtype(AutoDtypeEnum.Array_InOut)
@@ -2019,8 +2044,15 @@ class LandmarksRandomBackground(LandmarksTransform):
             self.flag = False
             return img.astype(np.uint8), landmarks.astype(np.float32)
 
-        new_img = F.apply_background(img=img, background=background)
+        num_landmarks = len(landmarks)
+        new_img, new_landmarks = F.apply_background(
+            img=img, background=background, landmarks=landmarks)
+
+        _transforms_api_assert(self, len(new_landmarks) != num_landmarks,
+                               f"{self}() have {num_landmarks} input "
+                               f"landmarks, but got {len(new_landmarks)} "
+                               f"output landmarks!")
 
         self.flag = True
 
-        return new_img.astype(np.uint8), landmarks.astype(np.float32)
+        return new_img.astype(np.uint8), new_landmarks.astype(np.float32)

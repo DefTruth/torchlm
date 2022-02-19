@@ -168,9 +168,9 @@ def apply_mask_with_alpha(img: np.ndarray, mask_w: int, mask_h: int, alpha: floa
 
     if np.random.uniform(0., 1.0) < 0.35:
         mask_value = 0
-
     img_patch = img[y0:y1, x0:x1, :].copy()
-    mask = np.empty_like(img_patch).fill(mask_value)
+    mask = np.zeros_like(img_patch)
+    mask[:, :, :] = mask_value
     fuse_mask = cv2.addWeighted(mask, alpha, img_patch, 1. - alpha, 0)
 
     img[y0:y1, x0:x1, :] = fuse_mask[:, :, :]
@@ -214,7 +214,7 @@ def apply_patch_with_alpha(img: np.ndarray, patch: np.ndarray, alpha: float = 0.
     return img.astype(np.uint8), patch_corner
 
 
-def apply_background(img: np.ndarray, background: np.ndarray) -> np.ndarray:
+def apply_background(img: np.ndarray, background: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     h, w, c = img.shape
     b_h, b_w, _ = background.shape
     if b_h <= h or b_w <= w:
@@ -229,8 +229,10 @@ def apply_background(img: np.ndarray, background: np.ndarray) -> np.ndarray:
     x0, y0 = max(x0, 0), max(y0, 0)
     x1, y1 = min(x1, b_w), min(y1, b_h)
     background[y0:y1, x0:x1, :] = img[:, :, :]
+    # need adjust landmarks
+    landmarks += np.array([x0, y0])
 
-    return background.astype(np.uint8)
+    return background.astype(np.uint8), landmarks.astype(np.float32)
 
 
 def apply_background_with_alpha(img: np.ndarray, background: np.ndarray, alpha: float = 0.5) -> np.ndarray:
