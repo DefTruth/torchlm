@@ -41,7 +41,7 @@ def test_torchlm_transforms():
     landmarks = [float(x) for x in lm_info[4:]]
     landmarks = np.array(landmarks).reshape(5, 2)  # (5,2)
 
-    # some global setting
+    # some global setting will show you useful details
     torchlm.set_transforms_debug(True)
     torchlm.set_transforms_logging(True)
     torchlm.set_autodtype_logging(True)
@@ -56,7 +56,7 @@ def test_torchlm_transforms():
         torchlm.LandmarksRandomBrightness(prob=0.),
         torchlm.LandmarksRandomRotate(40, prob=0.5, bins=8),
         torchlm.LandmarksRandomCenterCrop((0.5, 1.0), (0.5, 1.0), prob=0.5),
-        # bind torchvision image only transforms
+        # bind torchvision image only transforms with a given bind prob
         torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),
         torchlm.bind(torchvision.transforms.RandomAutocontrast(p=0.5)),
         torchlm.bind(torchvision.transforms.RandomAdjustSharpness(sharpness_factor=3, p=0.5)),
@@ -68,7 +68,7 @@ def test_torchlm_transforms():
         torchlm.bind(albumentations.RandomCrop(height=200, width=200, p=0.5)),
         torchlm.bind(albumentations.RandomScale(p=0.5)),
         torchlm.bind(albumentations.Rotate(p=0.5)),
-        # bind custom callable array functions
+        # bind custom callable array functions with a given bind prob
         torchlm.bind(callable_array_noop, bind_type=torchlm.BindEnum.Callable_Array, prob=0.5),
         # bind custom callable Tensor functions
         torchlm.bind(callable_tensor_noop, bind_type=torchlm.BindEnum.Callable_Tensor, prob=0.5),
@@ -84,6 +84,12 @@ def test_torchlm_transforms():
     plt.imshow(new_img)
     plt.show()
     cv2.imwrite(save_path, new_img[:, :, ::-1])
+
+    # unset the global status when you are in training process
+    torchlm.set_transforms_debug(False)
+    torchlm.set_transforms_logging(False)
+    torchlm.set_autodtype_logging(False)
+
     print("transformed landmarks: ", trans_landmarks.flatten().tolist())
     print("original    landmarks: ", landmarks.flatten().tolist())
 

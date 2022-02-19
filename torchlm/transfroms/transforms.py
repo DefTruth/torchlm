@@ -1140,13 +1140,6 @@ class LandmarksRandomCenterCrop(LandmarksTransform):
 
 
 class LandmarksRandomHorizontalFlip(LandmarksTransform):
-    """WARNING: HorizontalFlip augmentation mirrors the input image. When you apply
-     that augmentation to keypoints that mark the side of body parts (left or right),
-     those keypoints will point to the wrong side (since left on the mirrored image
-     becomes right). So when you are creating an augmentation pipeline look carefully
-     which augmentations could be applied to the input data. Also see:
-     https://albumentations.ai/docs/getting_started/keypoints_augmentation/
-    """
 
     def __init__(
             self,
@@ -1181,17 +1174,20 @@ class LandmarksRandomHorizontalFlip(LandmarksTransform):
 
         self.flag = True
 
+        _transforms_api_logging(
+            "WARNING!!!: HorizontalFlip augmentation mirrors the input image. "
+            "When you apply that augmentation to keypoints that mark the "
+            "side of body parts (left or right), those keypoints will point "
+            "to the wrong side (since left on the mirrored image becomes right)."
+            " So when you are creating an augmentation pipeline look carefully "
+            "which augmentations could be applied to the input data. Also see:\n "
+            "https://albumentations.ai/docs/getting_started/keypoints_augmentation/"
+        )
+
         return new_img.astype(np.uint8), new_landmarks.astype(np.float32)
 
 
 class LandmarksHorizontalFlip(LandmarksTransform):
-    """WARNING: HorizontalFlip augmentation mirrors the input image. When you apply
-     that augmentation to keypoints that mark the side of body parts (left or right),
-     those keypoints will point to the wrong side (since left on the mirrored image
-     becomes right). So when you are creating an augmentation pipeline look carefully
-     which augmentations could be applied to the input data. Also see:
-     https://albumentations.ai/docs/getting_started/keypoints_augmentation/
-    """
 
     def __init__(self):
         super(LandmarksHorizontalFlip, self).__init__()
@@ -1212,6 +1208,16 @@ class LandmarksHorizontalFlip(LandmarksTransform):
         new_landmarks[:, 0] += 2 * (cx - new_landmarks[:, 0])
 
         self.flag = True
+
+        _transforms_api_logging(
+            "WARNING!!!: HorizontalFlip augmentation mirrors the input image. "
+            "When you apply that augmentation to keypoints that mark the "
+            "side of body parts (left or right), those keypoints will point "
+            "to the wrong side (since left on the mirrored image becomes right)."
+            " So when you are creating an augmentation pipeline look carefully "
+            "which augmentations could be applied to the input data. Also see:\n "
+            "https://albumentations.ai/docs/getting_started/keypoints_augmentation/"
+        )
 
         return new_img.astype(np.uint8), new_landmarks.astype(np.float32)
 
