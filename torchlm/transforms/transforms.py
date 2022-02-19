@@ -1270,6 +1270,8 @@ class LandmarksRandomScale(LandmarksTransform):
 
         resize_scale_x = 1 + scale_x
         resize_scale_y = 1 + scale_y
+        print(resize_scale_x)
+        print(resize_scale_y)
 
         new_img = cv2.resize(img, None, fx=resize_scale_x, fy=resize_scale_y)
 
@@ -1578,9 +1580,9 @@ class LandmarksRandomHSV(LandmarksTransform):
 
     def __init__(
             self,
-            hue: Union[Tuple[int, int], int] = None,
-            saturation: Union[Tuple[int, int], int] = None,
-            brightness: Union[Tuple[int, int], int] = None,
+            hue: Union[Tuple[int, int], int] = 20,
+            saturation: Union[Tuple[int, int], int] = 20,
+            brightness: Union[Tuple[int, int], int] = 20,
             prob: float = 0.5
     ):
         super(LandmarksRandomHSV, self).__init__()
