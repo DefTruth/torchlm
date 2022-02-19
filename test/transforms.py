@@ -115,7 +115,7 @@ def test_torchlm_transform_mask():
         ])
     else:
         transform = torchlm.LandmarksCompose([
-            torchlm.LandmarksRandomMaskWithAlpha(prob=1.),
+            torchlm.LandmarksRandomMaskMixUp(prob=1.),
             torchlm.LandmarksResize((256, 256))
         ])
 
@@ -152,12 +152,12 @@ def test_torchlm_transform_patches_mixup():
 
     if not with_alpha:
         transform = torchlm.LandmarksCompose([
-            torchlm.LandmarksRandomPatchesMixUp(prob=1.),
+            torchlm.LandmarksRandomPatches(prob=1.),
             torchlm.LandmarksResize((256, 256))
         ])
     else:
         transform = torchlm.LandmarksCompose([
-            torchlm.LandmarksRandomPatchesMixUpWithAlpha(alpha=0.5, prob=1.),
+            torchlm.LandmarksRandomPatchesMixUp(alpha=0.5, prob=1.),
             torchlm.LandmarksResize((256, 256))
         ])
 
@@ -195,12 +195,12 @@ def test_torchlm_transform_backgrounds_mixup():
 
     if not with_alpha:
         transform = torchlm.LandmarksCompose([
-            torchlm.LandmarksRandomBackgroundMixUp(prob=1.),
+            torchlm.LandmarksRandomBackground(prob=1.),
             torchlm.LandmarksResize((256, 256))
         ])
     else:
         transform = torchlm.LandmarksCompose([
-            torchlm.LandmarksRandomBackgroundMixUpWithAlpha(alpha=0.5, prob=1.),
+            torchlm.LandmarksRandomBackgroundMixUp(alpha=0.5, prob=1.),
             torchlm.LandmarksResize((256, 256))
         ])
 
@@ -541,8 +541,11 @@ def test_torchlm_transform_align():
     with open(anno_path, 'r') as fr:
         lm_info = fr.readlines()[0].strip('\n').split(' ')
 
+
     landmarks = [float(x) for x in lm_info[:196]]
     landmarks = np.array(landmarks).reshape(98, 2)  # (5,2) or (98, 2) for WFLW
+    org_img = torchlm.draw_landmarks(img, landmarks, circle=4)
+    cv2.imwrite("logs/2_wflw_orginal.jpg", org_img[:, :, ::-1])
 
     # some global setting will show you useful details
     torchlm.set_transforms_debug(True)
