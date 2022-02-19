@@ -223,8 +223,30 @@ def test_torchlm_transform_backgrounds_mixup():
     torchlm.set_autodtype_logging(False)
 
 
+def test_torchlm_transform_center_crop():
+    pass
+
+
+def test_torchlm_transform_horizontal():
+    pass
+
+
+def test_torchlm_transform_rotate():
+    pass
+
+
+def test_torchlm_transform_shear():
+    pass
+
+
+def test_torchlm_transform_blur():
+    pass
+
+def test_torchlm_transform_align():
+    pass
+
 if __name__ == "__main__":
-    test_torchlm_transforms_pipeline()
+    # test_torchlm_transforms_pipeline()
     # test_torchlm_transform_mask()
     # test_torchlm_transform_patches_mixup()
-    # test_torchlm_transform_backgrounds_mixup()
+    test_torchlm_transform_backgrounds_mixup()
