@@ -2,8 +2,7 @@
 
 <div align='center'>
   <img src=https://img.shields.io/badge/PRs-welcome-9cf.svg >
-  <img src=https://static.pepy.tech/personalized-badge/torchlm?units=international_system&left_color=grey&right_color=pink&left_text=pypi%20downloads >
-  <img src=https://img.shields.io/pypi/v/torchlm?color=aff >
+  <img src=https://img.shields.io/pypi/v/torchlm?color=pink >
   <img src=https://img.shields.io/pypi/pyversions/torchlm?color=dfd >
   <img src=https://img.shields.io/badge/macos|linux|windows-pass-skyblue.svg >
   <img src=https://img.shields.io/badge/license-MIT-lightblue.svg >
