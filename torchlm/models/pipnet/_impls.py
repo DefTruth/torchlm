@@ -150,7 +150,7 @@ def _detect_impl(
 
     height, width, _ = img.shape
     img: np.ndarray = cv2.resize(img, (net.input_size, net.input_size))  # 256, 256
-    img: Tensor = _normalize(img=img).unsqueeze(0)  # (1,3,256,256)
+    img: Tensor = torch.from_numpy(_normalize(img=img)).unsqueeze(0)  # (1,3,256,256)
     outputs_cls, outputs_x, outputs_y, outputs_nb_x, outputs_nb_y = net.forward(img)
     # (1,68,8,8)
     tmp_batch, tmp_channel, tmp_height, tmp_width = outputs_cls.size()
@@ -304,6 +304,9 @@ def _training_impl(
         gamma=decay_gamma
     )
 
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         logging.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
@@ -374,3 +377,46 @@ def _training_impl(
         scheduler.step()
 
     return net
+
+
+def _export_impl(
+        net: _PIPNetImpl,
+        onnx_path: str = "./onnx/pipnet.onnx",
+        opset: int = 12,
+        simplify: bool = False,
+        output_names: Optional[List[str]] = None
+):
+    import onnx
+
+    save_dir = os.path.dirname(onnx_path)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    if output_names is None:
+        output_names = ["outputs_cls", "outputs_x", "outputs_y",
+                        "outputs_nb_x", "outputs_nb_y"]
+
+    x = torch.randn((1, 3, net.input_size, net.input_size)).float()
+    torch.onnx.export(
+        net, x,
+        onnx_path,
+        verbose=False,
+        opset_version=opset,
+        input_names=['img'],
+        output_names=output_names
+    )
+    # Checks
+    model_onnx = onnx.load(onnx_path)  # load onnx model
+    onnx.checker.check_model(model_onnx)  # check onnx model
+    print(onnx.helper.printable_graph(model_onnx.graph))  # print
+
+    if simplify:
+        try:
+            import onnxsim
+            model_onnx, check = onnxsim.simplify(
+                model_onnx, check_n=3)
+            assert check, 'assert check failed'
+            onnx.save(model_onnx, onnx_path)
+
+        except Exception as e:
+            print(f"{onnx_path}:+ simplifier failure: {e}")

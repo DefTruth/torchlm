@@ -1684,7 +1684,7 @@ class LandmarksRandomMaskMixUp(LandmarksTransform):
 
     def __init__(
             self,
-            mask_ratio: float = 0.25,
+            mask_ratio: float = 0.15,
             prob: float = 0.5,
             trans_ratio: float = 0.5,
             alpha: float = 0.9

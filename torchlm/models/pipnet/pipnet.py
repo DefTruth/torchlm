@@ -20,8 +20,10 @@ from ._impls import (
     _detect_impl,
     _training_impl,
     _loss_impl,
+    _export_impl,
     _PIPNet_Loss_Output_Type
 )
+from ..utils import transforms
 from ._data import _PIPDataset
 
 _PIPNet_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
@@ -225,13 +227,16 @@ class PIPNetResNet(_PIPNetImpl):
             decay_steps: Optional[List[int]] = (30, 50),
             decay_gamma: Optional[float] = 0.1,
             device: Optional[Union[str, torch.device]] = "cuda",
+            transform: Optional[transforms.LandmarksCompose] = None,
+            norm_resize_transform: Optional[transforms.LandmarksCompose] = None,
             **kwargs: Any  # params for DataLoader
     ) -> _PIPNetImpl:
-        # TODO: prepare dataset and dataloader
+        device = device if torch.cuda.is_available() else "cpu"
+        # prepare dataset
         default_dataset = _PIPDataset(
             annotation_path=annotation_path,
-            transform_without_norm_resize=None,
-            norm_resize_transform=None
+            input_size=self.input_size,
+            transform=transform
         )
         train_loader = DataLoader(default_dataset, **kwargs)
 
@@ -253,8 +258,20 @@ class PIPNetResNet(_PIPNetImpl):
             device=device
         )
 
-    def export(self, *args, **kwargs) -> Any:
-        pass
+    def export(
+            self,
+            onnx_path: str = "./onnx/pipnet.onnx",
+            opset: int = 12,
+            simplify: bool = False,
+            output_names: Optional[List[str]] = None
+    ) -> None:
+        _export_impl(
+            net=self,
+            onnx_path=onnx_path,
+            opset=opset,
+            simplify=simplify,
+            output_names=output_names
+        )
 
 
 class PIPNetMobileNetV2(_PIPNetImpl):
@@ -386,13 +403,16 @@ class PIPNetMobileNetV2(_PIPNetImpl):
             decay_steps: Optional[List[int]] = (30, 50),
             decay_gamma: Optional[float] = 0.1,
             device: Optional[Union[str, torch.device]] = "cuda",
+            transform: Optional[transforms.LandmarksCompose] = None,
+            norm_resize_transform: Optional[transforms.LandmarksCompose] = None,
             **kwargs: Any  # params for DataLoader
     ) -> _PIPNetImpl:
-        # TODO: prepare dataset and dataloader
+        device = device if torch.cuda.is_available() else "cpu"
+        # prepare dataset
         default_dataset = _PIPDataset(
             annotation_path=annotation_path,
-            transform_without_norm_resize=None,
-            norm_resize_transform=None
+            input_size=self.input_size,
+            transform=transform
         )
         train_loader = DataLoader(default_dataset, **kwargs)
 
@@ -414,8 +434,20 @@ class PIPNetMobileNetV2(_PIPNetImpl):
             device=device
         )
 
-    def export(self, *args, **kwargs) -> Any:
-        pass
+    def export(
+            self,
+            onnx_path: str = "./onnx/pipnet.onnx",
+            opset: int = 12,
+            simplify: bool = False,
+            output_names: Optional[List[str]] = None
+    ) -> None:
+        _export_impl(
+            net=self,
+            onnx_path=onnx_path,
+            opset=opset,
+            simplify=simplify,
+            output_names=output_names
+        )
 
 
 def _pipnet(

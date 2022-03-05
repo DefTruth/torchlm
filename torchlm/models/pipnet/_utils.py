@@ -61,7 +61,7 @@ def _get_meanface(
 
 def _normalize(
         img: np.ndarray
-) -> Tensor:
+) -> np.ndarray:
     """
     :param img: source image, RGB with HWC and range [0,255]
     :return: normalized image CHW Tensor for PIPNet
@@ -75,4 +75,5 @@ def _normalize(
     img[:, :, 1] /= 0.224
     img[:, :, 2] /= 0.225
     img = img.transpose((2, 0, 1))  # HWC->CHW
-    return torch.from_numpy(img)
+    return img.astype(np.float32)
+
