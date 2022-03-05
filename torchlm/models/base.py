@@ -15,7 +15,7 @@ class BaseModel(nn.Module):
         raise NotImplementedError
 
     @abstractmethod
-    def train(self, *args, **kwargs) -> Any:
+    def training(self, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     @abstractmethod

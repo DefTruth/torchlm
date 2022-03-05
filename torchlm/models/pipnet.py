@@ -11,10 +11,12 @@ import warnings
 import numpy as np
 import torch.nn as nn
 from torch import Tensor
+from torch import optim
 import torch.nn.functional as F
 from torchvision import models
 from torch.hub import load_state_dict_from_url
 from torchvision.models import ResNet, MobileNetV2
+from torch.utils.data import Dataset, DataLoader
 from typing import Tuple, Union, Optional, Any, List
 
 from .base import BaseModel
@@ -140,7 +142,7 @@ class _PIPNet(BaseModel):
     def detect(self, *args, **kwargs) -> Any:
         raise NotImplementedError
 
-    def train(self, *args, **kwargs) -> Any:
+    def training(self, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     def export(self, *args, **kwargs) -> Any:
@@ -225,8 +227,9 @@ class _PIPNet(BaseModel):
                     self.meanface_status = True
 
 
+
 @torch.no_grad()
-def _detect(
+def _detect_impl(
         net: _PIPNet,
         img: np.ndarray
 ) -> np.ndarray:
@@ -295,6 +298,173 @@ def _detect(
     lms_pred_merge[:, 1] *= float(height)
 
     return lms_pred_merge
+
+
+_PIPNet_Loss_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
+
+
+def _loss_impl(
+        outputs_cls: Tensor,
+        outputs_x: Tensor,
+        outputs_y: Tensor,
+        outputs_nb_x: Tensor,
+        outputs_nb_y: Tensor,
+        labels_cls: Tensor,
+        labels_x: Tensor,
+        labels_y: Tensor,
+        labels_nb_x: Tensor,
+        labels_nb_y: Tensor,
+        criterion_cls: nn.Module,
+        criterion_reg: nn.Module,
+        num_nb: int = 10
+) -> _PIPNet_Loss_Output_Type:
+    """
+    :param outputs_cls: output heatmap Tensor e.g (b,68,8,8)
+    :param outputs_x: output x offsets Tensor e.g (b,68,8,8)
+    :param outputs_y: output y offsets Tensor e.g (b,68,8,8)
+    :param outputs_nb_x: output neighbor's x offsets Tensor e.g (b,68*10,8,8)
+    :param outputs_nb_y: output neighbor's y offsets Tensor e.g (b,68*10,8,8)
+    :param labels_cls: output heatmap Tensor e.g (b,68,8,8)
+    :param labels_x: output x offsets Tensor e.g (b,68,8,8)
+    :param labels_y: output y offsets Tensor e.g (b,68,8,8)
+    :param labels_nb_x: output neighbor's x offsets Tensor e.g (b,68*10,8,8)
+    :param labels_nb_y: output neighbor's y offsets Tensor e.g (b,68*10,8,8)
+    :param criterion_cls: loss criterion for heatmap classification, e.g MSELoss
+    :param criterion_reg: loss criterion for offsets regression, e.g L1Loss
+    :param num_nb: the number of Nearest-neighbor landmarks for NRM
+    :return: losses Tensor values without weighted.
+    """
+
+    tmp_batch, tmp_channel, tmp_height, tmp_width = outputs_cls.size()
+    labels_cls = labels_cls.view(tmp_batch * tmp_channel, -1)
+    labels_max_ids = torch.argmax(labels_cls, 1)
+    labels_max_ids = labels_max_ids.view(-1, 1)
+    labels_max_ids_nb = labels_max_ids.repeat(1, num_nb).view(-1, 1)
+
+    outputs_x = outputs_x.view(tmp_batch * tmp_channel, -1)
+    outputs_x_select = torch.gather(outputs_x, 1, labels_max_ids)
+    outputs_y = outputs_y.view(tmp_batch * tmp_channel, -1)
+    outputs_y_select = torch.gather(outputs_y, 1, labels_max_ids)
+    outputs_nb_x = outputs_nb_x.view(tmp_batch * num_nb * tmp_channel, -1)
+    outputs_nb_x_select = torch.gather(outputs_nb_x, 1, labels_max_ids_nb)
+    outputs_nb_y = outputs_nb_y.view(tmp_batch * num_nb * tmp_channel, -1)
+    outputs_nb_y_select = torch.gather(outputs_nb_y, 1, labels_max_ids_nb)
+
+    labels_x = labels_x.view(tmp_batch * tmp_channel, -1)
+    labels_x_select = torch.gather(labels_x, 1, labels_max_ids)
+    labels_y = labels_y.view(tmp_batch * tmp_channel, -1)
+    labels_y_select = torch.gather(labels_y, 1, labels_max_ids)
+    labels_nb_x = labels_nb_x.view(tmp_batch * num_nb * tmp_channel, -1)
+    labels_nb_x_select = torch.gather(labels_nb_x, 1, labels_max_ids_nb)
+    labels_nb_y = labels_nb_y.view(tmp_batch * num_nb * tmp_channel, -1)
+    labels_nb_y_select = torch.gather(labels_nb_y, 1, labels_max_ids_nb)
+
+    labels_cls = labels_cls.view(tmp_batch, tmp_channel, tmp_height, tmp_width)
+    loss_cls = criterion_cls(outputs_cls, labels_cls)
+    loss_x = criterion_reg(outputs_x_select, labels_x_select)
+    loss_y = criterion_reg(outputs_y_select, labels_y_select)
+    loss_nb_x = criterion_reg(outputs_nb_x_select, labels_nb_x_select)
+    loss_nb_y = criterion_reg(outputs_nb_y_select, labels_nb_y_select)
+
+    return loss_cls, loss_x, loss_y, loss_nb_x, loss_nb_y
+
+
+def _train_impl(
+        net: _PIPNet,
+        train_loader: DataLoader,
+        criterion_cls: nn.Module = nn.MSELoss(),
+        criterion_reg: nn.Module = nn.L1Loss(),
+        learning_rate: float = 0.0001,
+        cls_loss_weight: float = 10.,
+        reg_loss_weight: float = 1.,
+        num_nb: int = 10,
+        num_epochs: int = 60,
+        save_dir: Optional[str] = "./save",
+        save_interval: Optional[int] = 10,
+        save_prefix: Optional[str] = "",
+        decay_steps: Optional[List[int]] = (30, 50),
+        decay_gamma: Optional[float] = 0.1,
+        device: Optional[Union[str, torch.device]] = "cuda"
+):
+    import logging
+
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    scheduler = optim.lr_scheduler.MultiStepLR(
+        optimizer=optimizer,
+        milestones=decay_steps,
+        gamma=decay_gamma
+    )
+
+    for epoch in range(num_epochs):
+        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        logging.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        print('-' * 10)
+        logging.info('-' * 10)
+
+        net.train()
+        epoch_loss = 0.0
+
+        for i, data in enumerate(train_loader):
+            inputs, labels_cls, labels_x, labels_y, labels_nb_x, labels_nb_y = data
+            inputs = inputs.to(device)
+            labels_cls = labels_cls.to(device)
+            labels_x = labels_x.to(device)
+            labels_y = labels_y.to(device)
+            labels_nb_x = labels_nb_x.to(device)
+            labels_nb_y = labels_nb_y.to(device)
+            outputs_cls, outputs_x, outputs_y, outputs_nb_x, outputs_nb_y = net(inputs)
+            loss_cls, loss_x, loss_y, loss_nb_x, loss_nb_y = net.loss(
+                outputs_cls=outputs_cls,
+                outputs_x=outputs_x,
+                outputs_y=outputs_y,
+                outputs_nb_x=outputs_nb_x,
+                outputs_nb_y=outputs_nb_y,
+                labels_cls=labels_cls,
+                labels_x=labels_x,
+                labels_y=labels_y,
+                labels_nb_x=labels_nb_x,
+                labels_nb_y=labels_nb_y,
+                criterion_cls=criterion_cls,
+                criterion_reg=criterion_reg,
+                num_nb=num_nb
+            )
+            loss = cls_loss_weight * loss_cls + reg_loss_weight * loss_x \
+                   + reg_loss_weight * loss_y + reg_loss_weight * loss_nb_x \
+                   + reg_loss_weight * loss_nb_y
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if i % 10 == 0:
+                print(
+                    '[Epoch {:d}/{:d}, Batch {:d}/{:d}] <Total loss: {:.6f}> <cls loss: {:.6f}> '
+                    '<x loss: {:.6f}> <y loss: {:.6f}> <nbx loss: {:.6f}> <nby loss: {:.6f}>'
+                        .format(epoch, num_epochs - 1, i, len(train_loader) - 1, loss.item(),
+                                cls_loss_weight * loss_cls.item(), reg_loss_weight * loss_x.item(),
+                                reg_loss_weight * loss_y.item(), reg_loss_weight * loss_nb_x.item(),
+                                reg_loss_weight * loss_nb_y.item())
+                )
+                logging.info(
+                    '[Epoch {:d}/{:d}, Batch {:d}/{:d}] <Total loss: {:.6f}> <cls loss: {:.6f}> '
+                    '<x loss: {:.6f}> <y loss: {:.6f}> <nbx loss: {:.6f}> <nby loss: {:.6f}>'
+                        .format(epoch, num_epochs - 1, i, len(train_loader) - 1, loss.item(),
+                                cls_loss_weight * loss_cls.item(), reg_loss_weight * loss_x.item(),
+                                reg_loss_weight * loss_y.item(), reg_loss_weight * loss_nb_x.item(),
+                                reg_loss_weight * loss_nb_y.item())
+                )
+            epoch_loss += loss.item()
+
+        epoch_loss /= len(train_loader)
+        if epoch % (save_interval - 1) == 0 and epoch > 0:
+            epoch_loss = np.round(epoch_loss, 4)
+            filename = os.path.join(save_dir, f'{save_prefix}-epoch{epoch}-loss{epoch_loss}.pth')
+            torch.save(net.state_dict(), filename)
+            print(filename, ' saved')
+        # adjust lr
+        scheduler.step()
+
+    return net
 
 
 class PIPNetResNet(_PIPNet):
@@ -472,17 +642,13 @@ class PIPNetResNet(_PIPNet):
 
         return x1, x2, x3, x4, x5
 
-    def loss(self, *args, **kwargs) -> Any:
-        pass
+    def loss(self, *args, **kwargs) -> _PIPNet_Loss_Output_Type:
+        return _loss_impl(*args, **kwargs)
 
-    def detect(
-            self,
-            img: np.ndarray
-    ) -> np.ndarray:
+    def detect(self, img: np.ndarray) -> np.ndarray:
+        return _detect_impl(net=self, img=img)
 
-        return _detect(net=self, img=img)
-
-    def train(self, *args, **kwargs) -> Any:
+    def training(self, *args, **kwargs) -> _PIPNet:
         pass
 
     def export(self, *args, **kwargs) -> Any:
@@ -596,17 +762,13 @@ class PIPNetMobileNetV2(_PIPNet):
         x5 = self.nb_y_layer(x)
         return x1, x2, x3, x4, x5
 
-    def loss(self, *args, **kwargs) -> Any:
-        pass
+    def loss(self, *args, **kwargs) -> _PIPNet_Loss_Output_Type:
+        return _loss_impl(*args, **kwargs)
 
-    def detect(
-            self,
-            img: np.ndarray
-    ) -> np.ndarray:
+    def detect(self, img: np.ndarray) -> np.ndarray:
+        return _detect_impl(net=self, img=img)
 
-        return _detect(net=self, img=img)
-
-    def train(self, *args, **kwargs) -> Any:
+    def training(self, *args, **kwargs) -> _PIPNet:
         pass
 
     def export(self, *args, **kwargs) -> Any:
