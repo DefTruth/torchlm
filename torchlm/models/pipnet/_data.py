@@ -18,7 +18,7 @@ def _default_normalize(img: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarr
     return img.astype(np.float32), landmarks.astype(np.float32)
 
 
-class _PIPDataset(Dataset):
+class _PIPTrainDataset(Dataset):
 
     def __init__(
             self,
@@ -26,7 +26,7 @@ class _PIPDataset(Dataset):
             input_size: int = 256,
             transform: Optional[transforms.LandmarksCompose] = None
     ):
-        super(_PIPDataset, self).__init__()
+        super(_PIPTrainDataset, self).__init__()
         self.annotation_path = annotation_path
         self.transform = transform
         if self.transform is None:
@@ -47,7 +47,23 @@ class _PIPDataset(Dataset):
                 transforms.LandmarksToTensor()
             ])
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> Any:
+        ...
+
+    def __len__(self):
+        ...
+
+
+class _PIPEvalDataset(object):
+
+    def __init__(
+            self,
+            annotation_path: str
+    ):
+        super(_PIPEvalDataset, self).__init__()
+        self.annotation_path = annotation_path
+
+    def __getitem__(self, index) -> Tuple[np.ndarray, np.ndarray]:  # img, lms_gt
         ...
 
     def __len__(self):

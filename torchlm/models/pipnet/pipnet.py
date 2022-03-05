@@ -1,32 +1,22 @@
 """
 A PyTorch Re-implementation of PIPNet with all-in-one style, include
-model definition, loss computation, training, inference and exporting
-processes in a single class.
+model definition, loss computation, training, inference, exporting
+and evaluating processes in a one class.
 Reference: https://github.com/jhb86253817/PIPNet/blob/master/lib/networks.py
 """
 import torch
-import numpy as np
 import torch.nn as nn
 from torch import Tensor
 import torch.nn.functional as F
 from torchvision import models
-from torch.utils.data import DataLoader
 from torch.hub import load_state_dict_from_url
 from torchvision.models import ResNet, MobileNetV2
-from typing import Tuple, Union, Optional, Any, List
+from typing import Union, Optional, Any
 
 from ._impls import (
     _PIPNetImpl,
-    _detect_impl,
-    _training_impl,
-    _loss_impl,
-    _export_impl,
-    _PIPNet_Loss_Output_Type
+    _PIPNet_Output_Type
 )
-from ..utils import transforms
-from ._data import _PIPDataset
-
-_PIPNet_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
 
 __all__ = ["pipnet_resnet18_10x68x32x256", "pipnet_resnet50_10x68x32x256",
            "pipnet_resnet101_10x68x32x256", "pipnet_mobilenetv2_10x68x32x256",
@@ -205,74 +195,6 @@ class PIPNetResNet(_PIPNetImpl):
 
         return x1, x2, x3, x4, x5
 
-    def loss(self, *args, **kwargs) -> _PIPNet_Loss_Output_Type:
-        return _loss_impl(*args, **kwargs)
-
-    def detect(self, img: np.ndarray) -> np.ndarray:
-        return _detect_impl(net=self, img=img)
-
-    def training(
-            self,
-            annotation_path: str,
-            criterion_cls: nn.Module = nn.MSELoss(),
-            criterion_reg: nn.Module = nn.L1Loss(),
-            learning_rate: float = 0.0001,
-            cls_loss_weight: float = 10.,
-            reg_loss_weight: float = 1.,
-            num_nb: int = 10,
-            num_epochs: int = 60,
-            save_dir: Optional[str] = "./save",
-            save_interval: Optional[int] = 10,
-            save_prefix: Optional[str] = "",
-            decay_steps: Optional[List[int]] = (30, 50),
-            decay_gamma: Optional[float] = 0.1,
-            device: Optional[Union[str, torch.device]] = "cuda",
-            transform: Optional[transforms.LandmarksCompose] = None,
-            norm_resize_transform: Optional[transforms.LandmarksCompose] = None,
-            **kwargs: Any  # params for DataLoader
-    ) -> _PIPNetImpl:
-        device = device if torch.cuda.is_available() else "cpu"
-        # prepare dataset
-        default_dataset = _PIPDataset(
-            annotation_path=annotation_path,
-            input_size=self.input_size,
-            transform=transform
-        )
-        train_loader = DataLoader(default_dataset, **kwargs)
-
-        return _training_impl(
-            net=self,
-            train_loader=train_loader,
-            criterion_cls=criterion_cls,
-            criterion_reg=criterion_reg,
-            learning_rate=learning_rate,
-            cls_loss_weight=cls_loss_weight,
-            reg_loss_weight=reg_loss_weight,
-            num_nb=num_nb,
-            num_epochs=num_epochs,
-            save_dir=save_dir,
-            save_prefix=save_prefix,
-            save_interval=save_interval,
-            decay_steps=decay_steps,
-            decay_gamma=decay_gamma,
-            device=device
-        )
-
-    def export(
-            self,
-            onnx_path: str = "./onnx/pipnet.onnx",
-            opset: int = 12,
-            simplify: bool = False,
-            output_names: Optional[List[str]] = None
-    ) -> None:
-        _export_impl(
-            net=self,
-            onnx_path=onnx_path,
-            opset=opset,
-            simplify=simplify,
-            output_names=output_names
-        )
-
 
 class PIPNetMobileNetV2(_PIPNetImpl):
     def __init__(
@@ -361,17 +283,10 @@ class PIPNetMobileNetV2(_PIPNetImpl):
         if self.nb_y_layer.bias is not None:
             nn.init.constant_(self.nb_y_layer.bias, 0)
 
-    def forward(
-            self,
-            x: Tensor
-    ) -> _PIPNet_Output_Type:
-
+    def forward(self, x: Tensor) -> _PIPNet_Output_Type:
         return self._forward_impl(x)
 
-    def _forward_impl(
-            self,
-            x: Tensor
-    ) -> _PIPNet_Output_Type:
+    def _forward_impl(self, x: Tensor) -> _PIPNet_Output_Type:
 
         x = self.features(x)
         x1 = self.cls_layer(x)
@@ -380,74 +295,6 @@ class PIPNetMobileNetV2(_PIPNetImpl):
         x4 = self.nb_x_layer(x)
         x5 = self.nb_y_layer(x)
         return x1, x2, x3, x4, x5
-
-    def loss(self, *args, **kwargs) -> _PIPNet_Loss_Output_Type:
-        return _loss_impl(*args, **kwargs)
-
-    def detect(self, img: np.ndarray) -> np.ndarray:
-        return _detect_impl(net=self, img=img)
-
-    def training(
-            self,
-            annotation_path: str,
-            criterion_cls: nn.Module = nn.MSELoss(),
-            criterion_reg: nn.Module = nn.L1Loss(),
-            learning_rate: float = 0.0001,
-            cls_loss_weight: float = 10.,
-            reg_loss_weight: float = 1.,
-            num_nb: int = 10,
-            num_epochs: int = 60,
-            save_dir: Optional[str] = "./save",
-            save_interval: Optional[int] = 10,
-            save_prefix: Optional[str] = "",
-            decay_steps: Optional[List[int]] = (30, 50),
-            decay_gamma: Optional[float] = 0.1,
-            device: Optional[Union[str, torch.device]] = "cuda",
-            transform: Optional[transforms.LandmarksCompose] = None,
-            norm_resize_transform: Optional[transforms.LandmarksCompose] = None,
-            **kwargs: Any  # params for DataLoader
-    ) -> _PIPNetImpl:
-        device = device if torch.cuda.is_available() else "cpu"
-        # prepare dataset
-        default_dataset = _PIPDataset(
-            annotation_path=annotation_path,
-            input_size=self.input_size,
-            transform=transform
-        )
-        train_loader = DataLoader(default_dataset, **kwargs)
-
-        return _training_impl(
-            net=self,
-            train_loader=train_loader,
-            criterion_cls=criterion_cls,
-            criterion_reg=criterion_reg,
-            learning_rate=learning_rate,
-            cls_loss_weight=cls_loss_weight,
-            reg_loss_weight=reg_loss_weight,
-            num_nb=num_nb,
-            num_epochs=num_epochs,
-            save_dir=save_dir,
-            save_prefix=save_prefix,
-            save_interval=save_interval,
-            decay_steps=decay_steps,
-            decay_gamma=decay_gamma,
-            device=device
-        )
-
-    def export(
-            self,
-            onnx_path: str = "./onnx/pipnet.onnx",
-            opset: int = 12,
-            simplify: bool = False,
-            output_names: Optional[List[str]] = None
-    ) -> None:
-        _export_impl(
-            net=self,
-            onnx_path=onnx_path,
-            opset=opset,
-            simplify=simplify,
-            output_names=output_names
-        )
 
 
 def _pipnet(

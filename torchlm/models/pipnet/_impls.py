@@ -10,8 +10,13 @@ from torch.utils.data import DataLoader
 from typing import Tuple, Union, Optional, Any, List
 
 from ..core import ABCBaseModel
+from ..utils import metrics, transforms
 from ._cfgs import _DEFAULT_MEANFACE_STRINGS
 from ._utils import _get_meanface, _normalize
+from ._data import _PIPTrainDataset, _PIPEvalDataset
+
+_PIPNet_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
+_PIPNet_Loss_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
 
 
 class _PIPNetImpl(ABCBaseModel):
@@ -38,21 +43,6 @@ class _PIPNetImpl(ABCBaseModel):
         self.reverse_index2: List[int] = []
         self.max_len: int = -1
         self._set_default_meanface()
-
-    def loss(self, *args, **kwargs) -> Any:
-        raise NotImplementedError
-
-    def detect(self, *args, **kwargs) -> Any:
-        raise NotImplementedError
-
-    def training(self, *args, **kwargs) -> Any:
-        raise NotImplementedError
-
-    def export(self, *args, **kwargs) -> Any:
-        raise NotImplementedError
-
-    def forward(self, *args, **kwargs) -> Any:
-        raise NotImplementedError
 
     def set_custom_meanface(
             self,
@@ -129,6 +119,93 @@ class _PIPNetImpl(ABCBaseModel):
 
                     self.meanface_status = True
 
+    def loss(self, *args, **kwargs) -> _PIPNet_Loss_Output_Type:
+        return _loss_impl(*args, **kwargs)
+
+    def detect(self, img: np.ndarray) -> np.ndarray:
+        return _detect_impl(net=self, img=img)
+
+    def training(
+            self,
+            annotation_path: str,
+            criterion_cls: nn.Module = nn.MSELoss(),
+            criterion_reg: nn.Module = nn.L1Loss(),
+            learning_rate: float = 0.0001,
+            cls_loss_weight: float = 10.,
+            reg_loss_weight: float = 1.,
+            num_nb: int = 10,
+            num_epochs: int = 60,
+            save_dir: Optional[str] = "./save",
+            save_interval: Optional[int] = 10,
+            save_prefix: Optional[str] = "",
+            decay_steps: Optional[List[int]] = (30, 50),
+            decay_gamma: Optional[float] = 0.1,
+            device: Optional[Union[str, torch.device]] = "cuda",
+            transform: Optional[transforms.LandmarksCompose] = None,
+            norm_resize_transform: Optional[transforms.LandmarksCompose] = None,
+            **kwargs: Any  # params for DataLoader
+    ) -> nn.Module:
+        device = device if torch.cuda.is_available() else "cpu"
+        # prepare dataset
+        default_dataset = _PIPTrainDataset(
+            annotation_path=annotation_path,
+            input_size=self.input_size,
+            transform=transform
+        )
+        train_loader = DataLoader(default_dataset, **kwargs)
+
+        return _training_impl(
+            net=self,
+            train_loader=train_loader,
+            criterion_cls=criterion_cls,
+            criterion_reg=criterion_reg,
+            learning_rate=learning_rate,
+            cls_loss_weight=cls_loss_weight,
+            reg_loss_weight=reg_loss_weight,
+            num_nb=num_nb,
+            num_epochs=num_epochs,
+            save_dir=save_dir,
+            save_prefix=save_prefix,
+            save_interval=save_interval,
+            decay_steps=decay_steps,
+            decay_gamma=decay_gamma,
+            device=device
+        )
+
+    def evaluating(
+            self,
+            annotation_path: str,
+            norm_indices: List[int] = (60, 72),
+            dataset_type: Optional[str] = None
+    ) -> Tuple[float, float, float]:  # NME, FR, AUC
+        # prepare dataset
+        eval_dataset = _PIPEvalDataset(annotation_path=annotation_path)
+
+        return _evaluating_impl(
+            net=self,
+            eval_dataset=eval_dataset,
+            norm_indices=norm_indices,
+            dataset_type=dataset_type
+        )
+
+    def export(
+            self,
+            onnx_path: str = "./onnx/pipnet.onnx",
+            opset: int = 12,
+            simplify: bool = False,
+            output_names: Optional[List[str]] = None
+    ) -> None:
+        _export_impl(
+            net=self,
+            onnx_path=onnx_path,
+            opset=opset,
+            simplify=simplify,
+            output_names=output_names
+        )
+
+    def forward(self, *args, **kwargs) -> _PIPNet_Output_Type:
+        raise NotImplementedError
+
 
 @torch.no_grad()
 def _detect_impl(
@@ -200,9 +277,6 @@ def _detect_impl(
     lms_pred_merge[:, 1] *= float(height)
 
     return lms_pred_merge
-
-
-_PIPNet_Loss_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
 
 
 def _loss_impl(
@@ -377,6 +451,50 @@ def _training_impl(
         scheduler.step()
 
     return net
+
+
+def _evaluating_impl(
+        net: _PIPNetImpl,
+        eval_dataset: _PIPEvalDataset,
+        norm_indices: List[int] = (60, 72),
+        dataset_type: Optional[str] = None,
+) -> Tuple[float, float, float]:
+    """
+    :param net: PIPNet instance
+    :param eval_dataset: _PIPEvalDataset instance
+    :param norm_indices: the indexes of two eyeballs.
+    :param dataset_type: optional, specific dataset, e.g WFLW/COFW/300W
+    :return: NME, FR, AUC
+    """
+    import tqdm
+    norm_indices = list(norm_indices)
+    if dataset_type is not None:
+        if dataset_type.upper() in (
+                'DATA_300W', 'DATA_300W_COFW_WFLW',
+                'DATA_300W_CELEBA', '300W'
+        ):
+            norm_indices = [36, 45]
+        elif dataset_type.upper() == 'COFW':
+            norm_indices = [8, 9]
+        elif dataset_type.upper() == 'WFLW':
+            norm_indices = [60, 72]
+        elif dataset_type.upper() == 'AFLW':
+            norm_indices = None
+
+    nmes = []
+    # evaluating
+    for img, lms_gt in tqdm.tqdm(eval_dataset, colour="green"):
+        lms_pred = net.detect(img=img)  # (n,2)
+        if norm_indices is not None:
+            norm = np.linalg.norm(lms_gt[norm_indices[0]] - lms_gt[norm_indices[1]])
+        else:
+            norm = 1.
+        nmes.append(metrics.nme(lms_pred=lms_pred, lms_gt=lms_gt, norm=norm))
+
+    nme = np.mean(nmes).item()
+    fr, auc = metrics.fr_and_auc(nmes=nmes)
+
+    return nme, fr, auc
 
 
 def _export_impl(

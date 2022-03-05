@@ -19,6 +19,10 @@ class ABCBaseModel(nn.Module):
         raise NotImplementedError
 
     @abstractmethod
+    def evaluating(self, *args, **kwargs) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
     def export(self, *args, **kwargs) -> Any:
         raise NotImplementedError
 
