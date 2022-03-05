@@ -3,7 +3,7 @@ from abc import abstractmethod, ABCMeta
 from typing import Any
 
 
-class BaseModel(nn.Module):
+class ABCBaseModel(nn.Module):
     __metaclass__ = ABCMeta
 
     @abstractmethod
