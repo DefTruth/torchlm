@@ -20,7 +20,7 @@ from ._impls import (
 
 __all__ = ["pipnet_resnet18_10x68x32x256", "pipnet_resnet50_10x68x32x256",
            "pipnet_resnet101_10x68x32x256", "pipnet_mobilenetv2_10x68x32x256",
-           "build_pipnet"]
+           "pipnet"]
 
 # TODO: update model_urls
 model_urls = {
@@ -348,7 +348,7 @@ def _pipnet(
 
 
 # general usage
-def build_pipnet(*args, **kwargs) -> _PIPNetImpl:
+def pipnet(*args, **kwargs) -> _PIPNetImpl:
     return _pipnet(*args, **kwargs)
 
 
