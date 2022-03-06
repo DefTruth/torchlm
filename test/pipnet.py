@@ -10,18 +10,18 @@ def test_pipnet():
     save_path = "./logs/pipnet0.jpg"
     weight_file = "./pretrained/pipnet/weights/pipnet_resnet18_10x98x32x256_wflw.pth"
     detector = torchlm.tools.FaceBoxesV2()
-    net = torchlm.models.pipnet_resnet18_10x98x32x256_wflw(
+    pipnet = torchlm.models.pipnet_resnet18_10x98x32x256_wflw(
         pretrained=False, backbone_pretrained=True)
     device = "cpu"
     state_dict = torch.load(weight_file, map_location=device)
 
-    net = net.to(device)
-    net.load_state_dict(state_dict)
+    pipnet = pipnet.to(device)
+    pipnet.load_state_dict(state_dict)
 
     my_thresh = 0.6
     det_box_scale = 1.2
 
-    net.eval()
+    pipnet.eval()
 
     image = cv2.imread(img_path)
     image_height, image_width, _ = image.shape
@@ -46,7 +46,7 @@ def test_pipnet():
         det_ymax = min(det_ymax, image_height - 1)
         cv2.rectangle(image, (det_xmin, det_ymin), (det_xmax, det_ymax), (0, 0, 255), 2)
         det_crop_rgb = image[det_ymin:det_ymax, det_xmin:det_xmax, :][:, :, ::-1]  # RGB
-        lms_pred_merge = net.detect(img=det_crop_rgb)
+        lms_pred_merge = pipnet.detect(img=det_crop_rgb)
 
         print(lms_pred_merge.shape)
         for j in range(lms_pred_merge.shape[0]):
