@@ -38,7 +38,7 @@ class _PIPNetImpl(ABCBaseModel):
         # setup default meanface
         self.meanface_status = False
         self.meanface_type = meanface_type
-        self.meanface_indices: List[int] = []
+        self.meanface_indices: List[List[int]] = [[]]
         self.reverse_index1: List[int] = []
         self.reverse_index2: List[int] = []
         self.max_len: int = -1
@@ -142,7 +142,7 @@ class _PIPNetImpl(ABCBaseModel):
             decay_gamma: Optional[float] = 0.1,
             device: Optional[Union[str, torch.device]] = "cuda",
             transform: Optional[transforms.LandmarksCompose] = None,
-            norm_resize_transform: Optional[transforms.LandmarksCompose] = None,
+            coordinates_already_normalized: Optional[bool] = False,
             **kwargs: Any  # params for DataLoader
     ) -> nn.Module:
         device = device if torch.cuda.is_available() else "cpu"
@@ -150,7 +150,11 @@ class _PIPNetImpl(ABCBaseModel):
         default_dataset = _PIPTrainDataset(
             annotation_path=annotation_path,
             input_size=self.input_size,
-            transform=transform
+            num_lms=self.num_lms,
+            net_stride=self.net_stride,
+            meanface_indices=self.meanface_indices,
+            transform=transform,
+            coordinates_already_normalized=coordinates_already_normalized
         )
         train_loader = DataLoader(default_dataset, **kwargs)
 
@@ -176,10 +180,14 @@ class _PIPNetImpl(ABCBaseModel):
             self,
             annotation_path: str,
             norm_indices: List[int] = (60, 72),
-            dataset_type: Optional[str] = None
+            dataset_type: Optional[str] = None,
+            coordinates_already_normalized: Optional[bool] = False
     ) -> Tuple[float, float, float]:  # NME, FR, AUC
         # prepare dataset
-        eval_dataset = _PIPEvalDataset(annotation_path=annotation_path)
+        eval_dataset = _PIPEvalDataset(
+            annotation_path=annotation_path,
+            coordinates_already_normalized=coordinates_already_normalized
+        )
 
         return _evaluating_impl(
             net=self,

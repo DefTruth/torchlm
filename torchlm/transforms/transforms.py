@@ -53,7 +53,8 @@ __all__ = [
     "BindEnum",
     "bind",
     "set_transforms_logging",
-    "set_transforms_debug"
+    "set_transforms_debug",
+    "build_default_transform"
 ]
 
 TransformLoggingMode: bool = False
@@ -666,12 +667,20 @@ class LandmarksCompose(object):
 class LandmarksNormalize(LandmarksTransform):
     def __init__(
             self,
-            mean: float = 127.5,
-            std: float = 128.
+            mean: Union[float, List[float]] = 127.5,
+            std: Union[float, List[float]] = 128.,
+            force_norm_before_mean_std: bool = False
     ):
         super(LandmarksNormalize, self).__init__()
         self._mean = mean
         self._std = std
+        self._force_norm_before_mean_std = force_norm_before_mean_std
+        if not ((isinstance(self._mean, float) and isinstance(self._std, float))
+                or (isinstance(self._mean, list) and isinstance(self._std, list))
+        ):
+            raise ValueError("mean and std should be a float or List[float]")
+        if isinstance(self._mean, list) and isinstance(self._std, list):
+            assert len(self._mean) == 3 and len(self._std) == 3
 
     @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
@@ -680,7 +689,18 @@ class LandmarksNormalize(LandmarksTransform):
             landmarks: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
         img = img.astype(np.float32)
-        img = (img - self._mean) / self._std
+        if self._force_norm_before_mean_std:
+            img /= 255.
+
+        if isinstance(self._mean, float) and isinstance(self._std, float):
+            img = (img - self._mean) / self._std
+        else:
+            img[:, :, 0] -= self._mean[0]
+            img[:, :, 1] -= self._mean[1]
+            img[:, :, 2] -= self._mean[2]
+            img[:, :, 0] /= self._std[0]
+            img[:, :, 1] /= self._std[1]
+            img[:, :, 2] /= self._std[2]
 
         self.flag = True
 
@@ -690,13 +710,20 @@ class LandmarksNormalize(LandmarksTransform):
 class LandmarksUnNormalize(LandmarksTransform):
     def __init__(
             self,
-            mean: float = 127.5,
-            std: float = 128.
+            mean: Union[float, List[float]] = 127.5,
+            std: Union[float, List[float]] = 128.,
+            force_denorm_after_mean_std: bool = False
     ):
         super(LandmarksUnNormalize, self).__init__()
-
         self._mean = mean
         self._std = std
+        self._force_denorm_after_mean_std = force_denorm_after_mean_std
+        if not ((isinstance(self._mean, float) and isinstance(self._std, float))
+                or (isinstance(self._mean, list) and isinstance(self._std, list))
+        ):
+            raise ValueError("mean and std should be a float or List[float]")
+        if isinstance(self._mean, list) and isinstance(self._std, list):
+            assert len(self._mean) == 3 and len(self._std) == 3
 
     @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
@@ -706,7 +733,15 @@ class LandmarksUnNormalize(LandmarksTransform):
     ) -> Tuple[np.ndarray, np.ndarray]:
         # must be float
         img = img.astype(np.float32)
-        img = img * self._std + self._mean
+        if isinstance(self._mean, float) and isinstance(self._std, float):
+            img = img * self._std + self._mean
+        else:
+            img[:, :, 0] = img[:, :, 0] * self._std[0] + self._mean[0]
+            img[:, :, 1] = img[:, :, 1] * self._std[1] + self._mean[1]
+            img[:, :, 2] = img[:, :, 2] * self._std[2] + self._mean[2]
+
+        if self._force_denorm_after_mean_std:
+            img *= 255.
 
         self.flag = True
 
@@ -928,7 +963,6 @@ class LandmarksAlign(LandmarksTransform):
             img: np.ndarray,
             landmarks: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-
         left_eye = landmarks[self._eyes_index[0]]
         right_eye = landmarks[self._eyes_index[1]]
         dx = (right_eye[0] - left_eye[0])
@@ -2055,3 +2089,44 @@ class LandmarksRandomBackground(LandmarksTransform):
         self.flag = True
 
         return new_img.astype(np.uint8), new_landmarks.astype(np.float32)
+
+
+def build_default_transform(
+        input_size: Tuple[int, int],
+        mean: Union[float, List[float]] = 127.5,
+        std: Union[float, List[float]] = 128.,
+        force_norm_before_mean_std: bool = False,
+        rotate: Optional[int] = 30,
+        keep_aspect: Optional[bool] = False,
+        to_tensor: Optional[bool] = False
+) -> LandmarksCompose:
+    if to_tensor:
+        return LandmarksCompose([
+            # use native torchlm transforms
+            LandmarksRandomMaskMixUp(prob=0.25),
+            LandmarksRandomBackgroundMixUp(prob=0.25),
+            LandmarksRandomScale(prob=0.25),
+            LandmarksRandomTranslate(prob=0.25),
+            LandmarksRandomShear(prob=0.25),
+            LandmarksRandomBlur(kernel_range=(5, 25), prob=0.25),
+            LandmarksRandomBrightness(prob=0.25),
+            LandmarksRandomRotate(rotate, prob=0.25, bins=8),
+            LandmarksRandomCenterCrop((0.5, 1.0), (0.5, 1.0), prob=0.25),
+            LandmarksResize(input_size, keep_aspect=keep_aspect),
+            LandmarksNormalize(mean, std, force_norm_before_mean_std),
+            LandmarksToTensor()
+        ])
+    return LandmarksCompose([
+        # use native torchlm transforms
+        LandmarksRandomMaskMixUp(prob=0.25),
+        LandmarksRandomBackgroundMixUp(prob=0.25),
+        LandmarksRandomScale(prob=0.25),
+        LandmarksRandomTranslate(prob=0.25),
+        LandmarksRandomShear(prob=0.25),
+        LandmarksRandomBlur(kernel_range=(5, 25), prob=0.25),
+        LandmarksRandomBrightness(prob=0.25),
+        LandmarksRandomRotate(rotate, prob=0.25, bins=8),
+        LandmarksRandomCenterCrop((0.5, 1.0), (0.5, 1.0), prob=0.25),
+        LandmarksResize(input_size, keep_aspect=keep_aspect),
+        LandmarksNormalize(mean, std, force_norm_before_mean_std)
+    ])
