@@ -1,12 +1,12 @@
 import numpy as np
 
 from ..tools import FaceDetTool, LandmarksDetTool
-from typing import Tuple, Any
+from typing import Tuple, Any, Union
 
 _Landmarks = np.ndarray
 _BBoxes = np.ndarray
 
-__all__ = ["set_faces", "set_landmarks", "forward"]
+__all__ = ["set_faces", "set_landmarks", "forward", "bind"]
 
 
 class RuntimeWrapper(object):
@@ -90,6 +90,14 @@ def set_faces(face_det: FaceDetTool):
 def set_landmarks(landmarks_det: LandmarksDetTool):
     RuntimeWrapper.set_landmarks(landmarks_det=landmarks_det)
 
+def bind(det: Union[FaceDetTool, LandmarksDetTool]):
+    if isinstance(det, FaceDetTool):
+        RuntimeWrapper.set_faces(face_det=det)
+    elif isinstance(det, LandmarksDetTool):
+        RuntimeWrapper.set_landmarks(landmarks_det=det)
+    else:
+        raise ValueError("Can only bind instance of "
+                         "(FaceDetTool,LandmarksDetTool)")
 
 def forward(
         image: np.ndarray,

@@ -3,12 +3,12 @@ import numpy as np
 from typing import Tuple, Optional
 
 __all__ = [
-    "draw_bbox",
+    "draw_bboxes",
     "draw_landmarks"
 ]
 
 
-def draw_bbox(img: np.ndarray, bboxes: np.ndarray) -> np.ndarray:
+def draw_bboxes(img: np.ndarray, bboxes: np.ndarray) -> np.ndarray:
     im = img[:, :, :].copy()
 
     bboxes = bboxes[:, :4]
@@ -33,15 +33,18 @@ def draw_landmarks(
         thickness: int = 1
 ) -> np.ndarray:
     im = img.astype(np.uint8).copy()
+    if landmarks.ndim == 2:
+        landmarks = np.expand_dims(landmarks, axis=0)
 
     for i in range(landmarks.shape[0]):
-        x, y = landmarks[i].astype(int).tolist()
-        cv2.circle(im, (x, y), circle, color, -1)
-        if text:
-            b = np.random.randint(0, 255)
-            g = np.random.randint(0, 255)
-            r = np.random.randint(0, 255)
-            cv2.putText(im, '{}'.format(i), (x, y - offset),
-                        cv2.FONT_ITALIC, font, (b, g, r), thickness)
+        for j in range(landmarks[i].shape[0]):
+            x, y = landmarks[i, j, :].astype(int).tolist()
+            cv2.circle(im, (x, y), circle, color, -1)
+            if text:
+                b = np.random.randint(0, 255)
+                g = np.random.randint(0, 255)
+                r = np.random.randint(0, 255)
+                cv2.putText(im, '{}'.format(i), (x, y - offset),
+                            cv2.FONT_ITALIC, font, (b, g, r), thickness)
 
     return im.astype(np.uint8)

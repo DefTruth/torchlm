@@ -4,15 +4,15 @@ from torchlm.tools import faceboxesv2
 from torchlm.models import pipnet
 
 
-def test_pipnet():
+def test_pipnet_runtime():
     device = "cpu"
     img_path = "./assets/pipnet0.jpg"
     save_path = "./logs/pipnet0.jpg"
-    checkpoint = "./pretrained/pipnet/weights/pipnet_resnet18_10x98x32x256_wflw.pth"
+    checkpoint = "./pretrained/pipnet/pipnet_resnet18_10x98x32x256_wflw.pth"
     image = cv2.imread(img_path)
 
-    torchlm.runtime.set_faces(faceboxesv2())
-    torchlm.runtime.set_landmarks(
+    torchlm.runtime.bind(faceboxesv2())
+    torchlm.runtime.bind(
         pipnet(
             backbone="resnet18",
             pretrained=True,
@@ -26,24 +26,25 @@ def test_pipnet():
             checkpoint=checkpoint
         )
     )
-
-    landmarks, detections = torchlm.runtime.forward(image)
-
-    for i in range(detections.shape[0]):
-        x1 = int(detections[i][0])
-        y1 = int(detections[i][1])
-        x2 = int(detections[i][2])
-        y2 = int(detections[i][3])
-        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-
-        for j in range(landmarks[i].shape[0]):
-            lx = int(landmarks[i, j, 0])
-            ly = int(landmarks[i, j, 1])
-            cv2.circle(image, (lx, ly), 1, (0, 255, 0), 2)
+    landmarks, bboxes = torchlm.runtime.forward(image)
+    image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
+    image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
 
     cv2.imwrite(save_path, image)
-    print(f"Detect done! Saved {save_path}")
+
+
+def test_pipnet_training():
+    pass
+
+def test_pipnet_evaluating():
+    pass
+
+def test_pipnet_export():
+    pass
 
 
 if __name__ == "__main__":
-    test_pipnet()
+    test_pipnet_runtime()
+    test_pipnet_training()
+    test_pipnet_evaluating()
+    test_pipnet_runtime()
