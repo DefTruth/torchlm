@@ -18,9 +18,12 @@ from ._impls import (
     _PIPNet_Output_Type
 )
 
-__all__ = ["pipnet_resnet18_10x68x32x256", "pipnet_resnet50_10x68x32x256",
-           "pipnet_resnet101_10x68x32x256", "pipnet_mobilenetv2_10x68x32x256",
-           "pipnet"]
+__all__ = [
+    "pipnet_resnet18_10x68x32x256_300w",
+    "pipnet_resnet50_10x68x32x256_300w",
+    "pipnet_resnet101_10x68x32x256_300w",
+    "pipnet"
+]
 
 # TODO: update model_urls
 model_urls = {
@@ -353,39 +356,29 @@ def pipnet(*args, **kwargs) -> _PIPNetImpl:
 
 
 # TODO: add 19/29/68/98 landmarks models
-# alias: pipnet backbone num_nb x num_lms x net_stride x input_size
-# 68 landmarks
-def pipnet_resnet18_10x68x32x256(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
+# alias: pipnet backbone num_nb x num_lms x net_stride x input_size dataset_type
+def pipnet_resnet18_10x68x32x256_300w(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
     """
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet18_10x68x32x256", "resnet18", pretrained, progress,
+    return _pipnet("pipnet_resnet18_10x68x32x256_300w", "resnet18", pretrained, progress,
                    10, 68, 32, 256, **kwargs)
 
 
-def pipnet_resnet50_10x68x32x256(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
+def pipnet_resnet50_10x68x32x256_300w(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
     """
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet50_10x68x32x256", "resnet50", pretrained, progress,
+    return _pipnet("pipnet_resnet50_10x68x32x256_300w", "resnet50", pretrained, progress,
                    10, 68, 32, 256, **kwargs)
 
 
-def pipnet_resnet101_10x68x32x256(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
+def pipnet_resnet101_10x68x32x256_300w(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
     """
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet101_10x68x32x256", "resnet101", pretrained, progress,
-                   10, 68, 32, 256, **kwargs)
-
-
-def pipnet_mobilenetv2_10x68x32x256(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
-    """
-    :param pretrained: If True, returns a model pre-trained model
-    :param progress: If True, displays a progress bar of the download to stderr
-    """
-    return _pipnet("pipnet_mobilenetv2_10x68x32x256", "mobilenet_v2", pretrained, progress,
+    return _pipnet("pipnet_resnet101_10x68x32x256_300w", "resnet101", pretrained, progress,
                    10, 68, 32, 256, **kwargs)
