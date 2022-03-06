@@ -29,6 +29,18 @@ class _PIPNetImpl(ABCBaseModel):
             net_stride: int = 32,
             meanface_type: Optional[str] = None
     ):
+        """
+        :param num_nb: the number of Nearest-neighbor landmarks for NRM, default 10
+        :param num_lms: the number of input/output landmarks, default 68.
+        :param input_size: input size for PIPNet, default 256.
+        :param net_stride: net stride for PIPNet, default 32, should be one of (32,64,128).
+        :param meanface_type: meanface type for PIPNet, AFLW/WFLW/COFW/300W/300W_CELEBA/300W_COFW_WFLW
+        The relationship of net_stride and the output size of feature map is:
+            # net_stride output_size
+            # 128        2x2
+            # 64         4x4
+            # 32         8x8
+        """
         super(_PIPNetImpl, self).__init__()
         assert net_stride in (32, 64, 128)
         self.num_nb = num_nb
