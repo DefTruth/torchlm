@@ -41,16 +41,12 @@ model_urls_root_r16 = "https://github.com/DefTrtuh/torchlm/releases/download/v0.
 model_urls = {
     # Paths for torchlm v0.1.6 PIPNet's pretrained weights
     'pipnet_resnet18_10x68x32x256_300w': f'{model_urls_root_r16}/pipnet_resnet18_10x68x32x256_300w.pth',
-    'pipnet_resnet50_10x68x32x256_300w': f'{model_urls_root_r16}/pipnet_resnet50_10x68x32x256_300w.pth',
     'pipnet_resnet101_10x68x32x256_300w': f'{model_urls_root_r16}/pipnet_resnet101_10x68x32x256_300w.pth',
     'pipnet_resnet18_10x19x32x256_aflw': f'{model_urls_root_r16}/pipnet_resnet18_10x19x32x256_aflw.pth',
-    'pipnet_resnet50_10x19x32x256_aflw': f'{model_urls_root_r16}/pipnet_resnet50_10x19x32x256_aflw.pth',
     'pipnet_resnet101_10x19x32x256_aflw': f'{model_urls_root_r16}/pipnet_resnet101_10x19x32x256_aflw.pth',
     'pipnet_resnet18_10x29x32x256_cofw': f'{model_urls_root_r16}/pipnet_resnet18_10x29x32x256_cofw.pth',
-    'pipnet_resnet50_10x29x32x256_cofw': f'{model_urls_root_r16}/pipnet_resnet50_10x29x32x256_cofw.pth',
     'pipnet_resnet101_10x29x32x256_cofw': f'{model_urls_root_r16}/pipnet_resnet101_10x29x32x256_cofw.pth',
     'pipnet_resnet18_10x98x32x256_wflw': f'{model_urls_root_r16}/pipnet_resnet18_10x98x32x256_wflw.pth',
-    'pipnet_resnet50_10x98x32x256_wflw': f'{model_urls_root_r16}/pipnet_resnet50_10x98x32x256_wflw.pth',
     'pipnet_resnet101_10x98x32x256_wflw': f'{model_urls_root_r16}/pipnet_resnet101_10x98x32x256_wflw.pth'
 }
 
