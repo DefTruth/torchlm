@@ -2,6 +2,8 @@ import numpy as np
 from scipy.integrate import simps
 from typing import List, Tuple
 
+__all__ = ["nme", "fr_and_auc"]
+
 
 def nme(lms_pred: np.ndarray, lms_gt: np.ndarray, norm: float) -> float:
     """

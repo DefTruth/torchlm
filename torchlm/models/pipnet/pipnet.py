@@ -110,7 +110,7 @@ class PIPNetResNet(_PIPNetImpl):
             inplane: int = 2048,
             plane: int = 2048
     ):
-        assert self.net_stride in (64, 128)
+        assert self.net_stride in (32, 64, 128)
         if self.net_stride == 128:
             self.layer5 = nn.Conv2d(inplane, plane, kernel_size=(3, 3),
                                     stride=(2, 2), padding=(1, 1))

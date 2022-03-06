@@ -234,7 +234,7 @@ def _detect_impl(
 ) -> np.ndarray:
     """
     :param img: source face image without background, RGB with HWC and range [0,255]
-    :return: detected landmarks coordinates, shape [num, 2]
+    :return: detected landmarks coordinates without normalize, shape [num, 2]
     """
     if not net.meanface_status:
         raise RuntimeError(

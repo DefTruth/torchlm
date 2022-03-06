@@ -10,6 +10,8 @@ import torch.nn.functional as F
 from itertools import product as product
 from typing import Tuple, Union, List
 
+__all__ = ["FaceBoxesV2"]
+
 
 class BasicConv2d(nn.Module):
 

@@ -29,8 +29,8 @@ def test_torchlm_transforms_pipeline():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -93,8 +93,8 @@ def test_torchlm_transform_mask():
     np.random.seed(seed)
 
     with_alpha = True
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_mask_alpha_{with_alpha}_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -135,8 +135,8 @@ def test_torchlm_transform_patches_mixup():
     np.random.seed(seed)
 
     with_alpha = True
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_patches_mixup_alpha_{with_alpha}_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -178,8 +178,8 @@ def test_torchlm_transform_backgrounds_mixup():
 
     with_alpha = True
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_backgrounds_mixup_alpha_{with_alpha}_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -219,8 +219,8 @@ def test_torchlm_transform_center_crop():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_center_crop_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -254,8 +254,8 @@ def test_torchlm_transform_horizontal():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_horizontal_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -289,8 +289,8 @@ def test_torchlm_transform_rotate():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_rotate_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -324,8 +324,8 @@ def test_torchlm_transform_shear():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_shear_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -394,8 +394,8 @@ def test_torchlm_transform_translate():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_translate_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -429,8 +429,8 @@ def test_torchlm_transform_brightness():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_brightness_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -464,8 +464,8 @@ def test_torchlm_transform_hsv():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_hsv_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -499,8 +499,8 @@ def test_torchlm_transform_scale():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_scale_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
@@ -534,8 +534,8 @@ def test_torchlm_transform_align():
     seed = np.random.randint(0, 1000)
     np.random.seed(seed)
 
-    img_path = "./2.jpg"
-    anno_path = "./2.txt"
+    img_path = "./assets/2.jpg"
+    anno_path = "./assets/2.txt"
     save_path = f"./logs/2_wflw_align_{seed}.jpg"
     img = cv2.imread(img_path)[:, :, ::-1].copy()  # RGB
     with open(anno_path, 'r') as fr:
