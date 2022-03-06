@@ -1,7 +1,7 @@
 import numpy as np
 from torch import Tensor
 from typing import Tuple, Union, Callable, Any, Dict
-from . import functional as F
+from . import _functional as F
 
 # base element_type
 Base_Element_Type = Union[np.ndarray, Tensor]

@@ -14,7 +14,7 @@ def get_long_description():
 
 setuptools.setup(
     name="torchlm",
-    version="0.1.5",
+    version="0.1.6",
     author="DefTruth",
     author_email="qyjdef@163.com",
     description="A PyTorch landmarks-only library with 100+ data augmentations, "
@@ -28,8 +28,11 @@ setuptools.setup(
         "opencv-python-headless>=4.5.2",
         "numpy>=1.14.4",
         "torch>=1.6.0",
-        "torchvision>=0.9.0",
-        "albumentations>=1.1.0"
+        "torchvision>=0.8.0",
+        "albumentations>=1.1.0",
+        "onnx>=1.8.0",
+        "onnxruntime>=1.7.0",
+        "tqdm>=4.60.0"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
