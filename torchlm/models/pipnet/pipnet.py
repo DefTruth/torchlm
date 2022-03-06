@@ -98,11 +98,11 @@ class PIPNetResNet(_PIPNetImpl):
         self.inplane = 512 * expansion  # 512/2048
         self.plane = self.inplane // (net_stride // 32)  # 32
         # setup extra layers
-        self._set_extra_layers(inplane=self.inplane, plane=self.plane)
+        self._make_extra_layers(inplane=self.inplane, plane=self.plane)
         # setup det headers
-        self._set_det_headers(plane=self.plane)
+        self._make_det_headers(plane=self.plane)
 
-    def _set_extra_layers(
+    def _make_extra_layers(
             self,
             inplane: int = 2048,
             plane: int = 2048
@@ -140,7 +140,7 @@ class PIPNetResNet(_PIPNetImpl):
             nn.init.constant_(self.bn5.weight, 1)
             nn.init.constant_(self.bn5.bias, 0)
 
-    def _set_det_headers(
+    def _make_det_headers(
             self,
             plane: int = 2048
     ):
@@ -185,9 +185,6 @@ class PIPNetResNet(_PIPNetImpl):
         if self.nb_y_layer.bias is not None:
             nn.init.constant_(self.nb_y_layer.bias, 0)
 
-    def forward(self, x: Tensor) -> _PIPNet_Output_Type:
-        return self._forward_impl(x)
-
     def _forward_extra(self, x: Tensor) -> Tensor:
         if self.net_stride == 128:
             x = F.relu(self.bn5(self.layer5(x)))
@@ -213,8 +210,10 @@ class PIPNetResNet(_PIPNetImpl):
         x3 = self.y_layer(x)
         x4 = self.nb_x_layer(x)
         x5 = self.nb_y_layer(x)
-
         return x1, x2, x3, x4, x5
+
+    def forward(self, x: Tensor) -> _PIPNet_Output_Type:
+        return self._forward_impl(x)
 
 
 class PIPNetMobileNetV2(_PIPNetImpl):
@@ -247,7 +246,7 @@ class PIPNetMobileNetV2(_PIPNetImpl):
             net_stride=net_stride,
             meanface_type=meanface_type
         )
-        assert net_stride == 32
+        assert net_stride == 32, "only support net_stride==32!"
         self.num_nb = num_nb
         self.num_lms = num_lms
         self.input_size = input_size
@@ -257,9 +256,9 @@ class PIPNetMobileNetV2(_PIPNetImpl):
         # calculate plane
         self.plane = 1280
         # setup det headers
-        self._set_det_headers(plane=self.plane)
+        self._make_det_headers(plane=self.plane)
 
-    def _set_det_headers(
+    def _make_det_headers(
             self,
             plane: int = 1280
     ):
@@ -304,9 +303,6 @@ class PIPNetMobileNetV2(_PIPNetImpl):
         if self.nb_y_layer.bias is not None:
             nn.init.constant_(self.nb_y_layer.bias, 0)
 
-    def forward(self, x: Tensor) -> _PIPNet_Output_Type:
-        return self._forward_impl(x)
-
     def _forward_impl(self, x: Tensor) -> _PIPNet_Output_Type:
 
         x = self.features(x)
@@ -316,6 +312,9 @@ class PIPNetMobileNetV2(_PIPNetImpl):
         x4 = self.nb_x_layer(x)
         x5 = self.nb_y_layer(x)
         return x1, x2, x3, x4, x5
+
+    def forward(self, x: Tensor) -> _PIPNet_Output_Type:
+        return self._forward_impl(x)
 
 
 def _pipnet(
