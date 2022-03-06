@@ -1,8 +1,9 @@
 from abc import abstractmethod, ABCMeta
 from typing import Any
 
+__all__ = ["FaceDetBase", "LandmarksDetBase"]
 
-class FaceDetTool(object):
+class FaceDetBase(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -10,7 +11,7 @@ class FaceDetTool(object):
         raise NotImplementedError
 
 
-class LandmarksDetTool(object):
+class LandmarksDetBase(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod

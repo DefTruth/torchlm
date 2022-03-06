@@ -9,7 +9,7 @@ from torch import optim
 from torch.utils.data import DataLoader
 from typing import Tuple, Union, Optional, Any, List
 
-from .._base import LandmarksTrainable
+from .._base import LandmarksTrainableBase
 from .._utils import metrics, transforms
 from ._cfgs import _DEFAULT_MEANFACE_STRINGS
 from ._utils import _get_meanface, _normalize
@@ -19,7 +19,7 @@ _PIPNet_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
 _PIPNet_Loss_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
 
 
-class _PIPNetImpl(nn.Module, LandmarksTrainable):
+class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
 
     def __init__(
             self,

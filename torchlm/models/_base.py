@@ -1,10 +1,10 @@
 from typing import Any
 from abc import abstractmethod, ABCMeta
 
-from ..tools import LandmarksDetTool
+from ..core import LandmarksDetBase
 
 
-class LandmarksTrainable(LandmarksDetTool):
+class LandmarksTrainableBase(LandmarksDetBase):
     __metaclass__ = ABCMeta
 
     @abstractmethod

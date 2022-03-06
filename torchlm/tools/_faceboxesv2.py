@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from itertools import product as product
 from typing import Tuple, Union, List
 
-from ._base import FaceDetTool
+from ..core import FaceDetBase
 
 __all__ = ["FaceBoxesV2"]
 
@@ -260,7 +260,7 @@ def _decode(loc: np.ndarray, priors: np.ndarray, variances: List[float]) -> Tens
     return boxes
 
 
-class FaceBoxesV2(FaceDetTool):
+class FaceBoxesV2(FaceDetBase):
     def __init__(self, device: Union[str, torch.device] = "cpu"):
         super(FaceBoxesV2).__init__()
         self.checkpoint_path = os.path.join(Path(__file__).parent, "assets/faceboxesv2.pth")
