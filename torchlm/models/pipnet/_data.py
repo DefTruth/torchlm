@@ -6,7 +6,7 @@ from math import floor
 from torch.utils.data import Dataset
 from typing import Tuple, Optional, List
 
-from ..utils import transforms, annotools
+from .._utils import transforms, annotools
 
 _PIPTrainDataset_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]
 

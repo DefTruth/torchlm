@@ -10,6 +10,8 @@ import torch.nn.functional as F
 from itertools import product as product
 from typing import Tuple, Union, List
 
+from ._base import FaceDetTool
+
 __all__ = ["FaceBoxesV2"]
 
 
@@ -258,7 +260,7 @@ def _decode(loc: np.ndarray, priors: np.ndarray, variances: List[float]) -> Tens
     return boxes
 
 
-class FaceBoxesV2(object):
+class FaceBoxesV2(FaceDetTool):
     def __init__(self, device: Union[str, torch.device] = "cpu"):
         super(FaceBoxesV2).__init__()
         self.checkpoint_path = os.path.join(Path(__file__).parent, "assets/faceboxesv2.pth")
@@ -288,7 +290,7 @@ class FaceBoxesV2(object):
     @torch.no_grad()
     def detect(
             self,
-            image: np.ndarray,
+            image: np.ndarray,  # BGR
             thresh: float = 0.6,
             im_scale: float = None,
             top_k: int = 100

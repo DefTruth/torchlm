@@ -22,16 +22,12 @@ from ._impls import (
 
 __all__ = [
     "pipnet_resnet18_10x68x32x256_300w",
-    "pipnet_resnet50_10x68x32x256_300w",
     "pipnet_resnet101_10x68x32x256_300w",
     "pipnet_resnet18_10x19x32x256_aflw",
-    "pipnet_resnet50_10x19x32x256_aflw",
     "pipnet_resnet101_10x19x32x256_aflw",
     "pipnet_resnet18_10x29x32x256_cofw",
-    "pipnet_resnet50_10x29x32x256_cofw",
     "pipnet_resnet101_10x29x32x256_cofw",
     "pipnet_resnet18_10x98x32x256_wflw",
-    "pipnet_resnet50_10x98x32x256_wflw",
     "pipnet_resnet101_10x98x32x256_wflw",
     "pipnet"
 ]
@@ -316,7 +312,7 @@ class PIPNetMobileNetV2(_PIPNetImpl):
         return self._forward_impl(x)
 
 
-def _pipnet(
+def pipnet(
         arch: Optional[str] = None,
         backbone: Optional[str] = "resnet18",
         pretrained: Optional[bool] = True,
@@ -328,6 +324,7 @@ def _pipnet(
         meanface_type: Optional[str] = "300w",
         backbone_pretrained: Optional[bool] = True,
         map_location: Optional[Union[str, torch.device]] = "cpu",
+        checkpoint: Optional[str] = None,
         **kwargs: Any
 ) -> _PIPNetImpl:
     """
@@ -336,17 +333,23 @@ def _pipnet(
      of arch must be:
      pipnet_backbone_(num_nb)x(num_lms)x(net_stride)x(input_size)_(meanface_type)
     :param backbone: Backbone type, one of ("resnet18", "resnet50", "resnet101", "mobilenet_v2")
-    :param pretrained: Try to load the pretrained PIPNet weights or not, default True.
+    :param pretrained: If True and 'checkpoint' is None, we will try to load the pretrained
+     PIPNet weights from torchlm's Github Repo, default True.
     :param progress: If True, displays a progress bar of the download to stderr
     :param num_nb: The number of Nearest-neighbor landmarks for NRM, default 10
     :param num_lms: The number of input/output landmarks, default 68.
     :param net_stride: net stride for PIPNet, default 32, should be one of (32,64,128).
     :param input_size: input size for PIPNet, default 256.
+    :param meanface_type: meanface type for PIPNet, AFLW/WFLW/COFW/300W/300W_CELEBA/300W_COFW_WFLW
     :param backbone_pretrained: If True, try to load a backbone with pretrained weights.
     :param map_location: location to map the user's loading device.
+    :param checkpoint: optional, local path to a pretrained weights, if not None,
+     this method will try the pretrained weights from local path.
     :param kwargs: rest parameters for resnet and mobilenet_v2 from torchvision.
     :return:
     """
+    import os
+
     # force map location to cpu if cuda is not available.
     map_location = map_location if torch.cuda.is_available() else "cpu"
 
@@ -381,20 +384,25 @@ def _pipnet(
             input_size=input_size,
             meanface_type=meanface_type
         )
-    if pretrained and arch is not None:
+    if pretrained and checkpoint is None:
         try:
-            # perform arch check before loading.
-            assert arch in model_urls, f"Invalid arch: {arch}!"
-            params = arch.strip(" ").split("_")
-            _arch_backbone = params[1]  # e.g resnet18
-            _arch_num_nb, _arch_num_lms, _arch_net_stride, _arch_input_size = \
-                [int(x) for x in params[2].split("x")]
-            _arch_meanface_type = params[-1]
-            assert all((
-                _arch_backbone == backbone, _arch_num_nb == num_nb,
-                _arch_num_lms == num_lms, _arch_net_stride == net_stride,
-                _arch_input_size == input_size, _arch_meanface_type == meanface_type
-            )), "arch check failed!"
+            if arch is not None:
+                # perform arch check before loading.
+                assert arch in model_urls, f"Invalid arch: {arch}!"
+                params = arch.strip(" ").split("_")
+                _arch_backbone = params[1]  # e.g resnet18
+                _arch_num_nb, _arch_num_lms, _arch_net_stride, _arch_input_size = \
+                    [int(x) for x in params[2].split("x")]
+                _arch_meanface_type = params[-1]
+                assert all((
+                    _arch_backbone == backbone, _arch_num_nb == num_nb,
+                    _arch_num_lms == num_lms, _arch_net_stride == net_stride,
+                    _arch_input_size == input_size, _arch_meanface_type == meanface_type
+                )), "arch check failed!"
+            else:
+                # build arch from params
+                arch = f"pipnet_{backbone}_{num_nb}x{num_lms}" \
+                       f"x{net_stride}x{input_size}_{meanface_type}"
             # try to load pretrained weights
             state_dict = load_state_dict_from_url(model_urls[arch],
                                                   progress=progress,
@@ -405,12 +413,13 @@ def _pipnet(
                           f" for {arch} ! Skip this loading! \nError Info: {e}\n"
                           f"Note: The arch param should be one of:\n"
                           f" {model_urls.keys()}")
-    return model
 
+    # load a pretrained weights from local path
+    if checkpoint is not None and os.path.exists(checkpoint):
+        state_dict = torch.load(checkpoint, map_location=map_location)
+        model.load_state_dict(state_dict)
 
-# general usage
-def pipnet(**kwargs) -> _PIPNetImpl:
-    return _pipnet(**kwargs)
+    return model.to(map_location)
 
 
 # Format: pipnet_backbone_(num_nb)x(num_lms)x(net_stride)x(input_size)_(meanface_type)
@@ -420,25 +429,15 @@ def pipnet_resnet18_10x68x32x256_300w(pretrained: bool = False, progress: bool =
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet18_10x68x32x256_300w", "resnet18", pretrained, progress,
+    return pipnet("pipnet_resnet18_10x68x32x256_300w", "resnet18", pretrained, progress,
                    10, 68, 32, 256, "300w", **kwargs)
-
-
-def pipnet_resnet50_10x68x32x256_300w(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
-    """
-    :param pretrained: If True, returns a model pre-trained model
-    :param progress: If True, displays a progress bar of the download to stderr
-    """
-    return _pipnet("pipnet_resnet50_10x68x32x256_300w", "resnet50", pretrained, progress,
-                   10, 68, 32, 256, "300w", **kwargs)
-
 
 def pipnet_resnet101_10x68x32x256_300w(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
     """
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet101_10x68x32x256_300w", "resnet101", pretrained, progress,
+    return pipnet("pipnet_resnet101_10x68x32x256_300w", "resnet101", pretrained, progress,
                    10, 68, 32, 256, "300w", **kwargs)
 
 
@@ -448,16 +447,7 @@ def pipnet_resnet18_10x19x32x256_aflw(pretrained: bool = False, progress: bool =
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet18_10x19x32x256_aflw", "resnet18", pretrained, progress,
-                   10, 19, 32, 256, "aflw", **kwargs)
-
-
-def pipnet_resnet50_10x19x32x256_aflw(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
-    """
-    :param pretrained: If True, returns a model pre-trained model
-    :param progress: If True, displays a progress bar of the download to stderr
-    """
-    return _pipnet("pipnet_resnet50_10x19x32x256_aflw", "resnet50", pretrained, progress,
+    return pipnet("pipnet_resnet18_10x19x32x256_aflw", "resnet18", pretrained, progress,
                    10, 19, 32, 256, "aflw", **kwargs)
 
 
@@ -466,7 +456,7 @@ def pipnet_resnet101_10x19x32x256_aflw(pretrained: bool = False, progress: bool 
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet101_10x19x32x256_aflw", "resnet101", pretrained, progress,
+    return pipnet("pipnet_resnet101_10x19x32x256_aflw", "resnet101", pretrained, progress,
                    10, 19, 32, 256, "aflw", **kwargs)
 
 
@@ -476,16 +466,7 @@ def pipnet_resnet18_10x29x32x256_cofw(pretrained: bool = False, progress: bool =
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet18_10x29x32x256_cofw", "resnet18", pretrained, progress,
-                   10, 29, 32, 256, "cofw", **kwargs)
-
-
-def pipnet_resnet50_10x29x32x256_cofw(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
-    """
-    :param pretrained: If True, returns a model pre-trained model
-    :param progress: If True, displays a progress bar of the download to stderr
-    """
-    return _pipnet("pipnet_resnet50_10x29x32x256_cofw", "resnet50", pretrained, progress,
+    return pipnet("pipnet_resnet18_10x29x32x256_cofw", "resnet18", pretrained, progress,
                    10, 29, 32, 256, "cofw", **kwargs)
 
 
@@ -494,7 +475,7 @@ def pipnet_resnet101_10x29x32x256_cofw(pretrained: bool = False, progress: bool 
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet101_10x29x32x256_cofw", "resnet101", pretrained, progress,
+    return pipnet("pipnet_resnet101_10x29x32x256_cofw", "resnet101", pretrained, progress,
                    10, 29, 32, 256, "cofw", **kwargs)
 
 
@@ -504,16 +485,7 @@ def pipnet_resnet18_10x98x32x256_wflw(pretrained: bool = False, progress: bool =
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet18_10x98x32x256_wflw", "resnet18", pretrained, progress,
-                   10, 98, 32, 256, "wflw", **kwargs)
-
-
-def pipnet_resnet50_10x98x32x256_wflw(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> _PIPNetImpl:
-    """
-    :param pretrained: If True, returns a model pre-trained model
-    :param progress: If True, displays a progress bar of the download to stderr
-    """
-    return _pipnet("pipnet_resnet50_10x98x32x256_wflw", "resnet50", pretrained, progress,
+    return pipnet("pipnet_resnet18_10x98x32x256_wflw", "resnet18", pretrained, progress,
                    10, 98, 32, 256, "wflw", **kwargs)
 
 
@@ -522,5 +494,5 @@ def pipnet_resnet101_10x98x32x256_wflw(pretrained: bool = False, progress: bool 
     :param pretrained: If True, returns a model pre-trained model
     :param progress: If True, displays a progress bar of the download to stderr
     """
-    return _pipnet("pipnet_resnet101_10x98x32x256_wflw", "resnet101", pretrained, progress,
+    return pipnet("pipnet_resnet101_10x98x32x256_wflw", "resnet101", pretrained, progress,
                    10, 98, 32, 256, "wflw", **kwargs)

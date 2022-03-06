@@ -9,8 +9,8 @@ from torch import optim
 from torch.utils.data import DataLoader
 from typing import Tuple, Union, Optional, Any, List
 
-from ..core import ABCBaseModel
-from ..utils import metrics, transforms
+from .._base import LandmarksTrainable
+from .._utils import metrics, transforms
 from ._cfgs import _DEFAULT_MEANFACE_STRINGS
 from ._utils import _get_meanface, _normalize
 from ._data import _PIPTrainDataset, _PIPEvalDataset
@@ -19,7 +19,7 @@ _PIPNet_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
 _PIPNet_Loss_Output_Type = Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
 
 
-class _PIPNetImpl(ABCBaseModel):
+class _PIPNetImpl(nn.Module, LandmarksTrainable):
 
     def __init__(
             self,
@@ -134,8 +134,8 @@ class _PIPNetImpl(ABCBaseModel):
     def loss(self, *args, **kwargs) -> _PIPNet_Loss_Output_Type:
         return _loss_impl(*args, **kwargs)
 
-    def detect(self, img: np.ndarray) -> np.ndarray:
-        return _detect_impl(net=self, img=img)
+    def detect(self, image: np.ndarray) -> np.ndarray:
+        return _detect_impl(net=self, image=image)
 
     def training(
             self,
@@ -230,10 +230,10 @@ class _PIPNetImpl(ABCBaseModel):
 @torch.no_grad()
 def _detect_impl(
         net: _PIPNetImpl,
-        img: np.ndarray
+        image: np.ndarray
 ) -> np.ndarray:
     """
-    :param img: source face image without background, RGB with HWC and range [0,255]
+    :param image: source face image without background, RGB with HWC and range [0,255]
     :return: detected landmarks coordinates without normalize, shape [num, 2]
     """
     if not net.meanface_status:
@@ -245,10 +245,10 @@ def _detect_impl(
 
     net.eval()
 
-    height, width, _ = img.shape
-    img: np.ndarray = cv2.resize(img, (net.input_size, net.input_size))  # 256, 256
-    img: Tensor = torch.from_numpy(_normalize(img=img)).unsqueeze(0)  # (1,3,256,256)
-    outputs_cls, outputs_x, outputs_y, outputs_nb_x, outputs_nb_y = net.forward(img)
+    height, width, _ = image.shape
+    image: np.ndarray = cv2.resize(image, (net.input_size, net.input_size))  # 256, 256
+    image: Tensor = torch.from_numpy(_normalize(img=image)).unsqueeze(0)  # (1,3,256,256)
+    outputs_cls, outputs_x, outputs_y, outputs_nb_x, outputs_nb_y = net.forward(image)
     # (1,68,8,8)
     tmp_batch, tmp_channel, tmp_height, tmp_width = outputs_cls.size()
     assert tmp_batch == 1
@@ -503,8 +503,8 @@ def _evaluating_impl(
 
     nmes = []
     # evaluating
-    for img, lms_gt in tqdm.tqdm(eval_dataset, colour="green"):
-        lms_pred = net.detect(img=img)  # (n,2)
+    for image, lms_gt in tqdm.tqdm(eval_dataset, colour="green"):
+        lms_pred = net.detect(image=image)  # (n,2)
         if norm_indices is not None:
             norm = np.linalg.norm(lms_gt[norm_indices[0]] - lms_gt[norm_indices[1]])
         else:

@@ -1,9 +1,10 @@
-import torch.nn as nn
-from abc import abstractmethod, ABCMeta
 from typing import Any
+from abc import abstractmethod, ABCMeta
+
+from ..tools import LandmarksDetTool
 
 
-class ABCBaseModel(nn.Module):
+class LandmarksTrainable(LandmarksDetTool):
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -25,4 +26,3 @@ class ABCBaseModel(nn.Module):
     @abstractmethod
     def export(self, *args, **kwargs) -> Any:
         raise NotImplementedError
-

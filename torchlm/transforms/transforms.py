@@ -12,12 +12,13 @@ from pathlib import Path
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Union, List, Optional, Callable, Any
 
-from . import functional as F
-from .autodtypes import (
+from . import _functional as F
+from ._autodtypes import (
     Image_InOutput_Type,
     Landmarks_InOutput_Type,
     AutoDtypeEnum,
-    autodtype
+    autodtype,
+    set_autodtype_logging
 )
 
 __all__ = [
@@ -54,6 +55,7 @@ __all__ = [
     "bind",
     "set_transforms_logging",
     "set_transforms_debug",
+    "set_autodtype_logging",
     "build_default_transform"
 ]
 
