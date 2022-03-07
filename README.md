@@ -14,13 +14,13 @@
 ## 🤗 Introduction
 **torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, support **training** and **inference**. **torchlm** is aims at only focus on any landmark detection, such as face landmarks. It provides **30+** native data augmentations and can **bind** with **80+** transforms from torchvision and albumentations with **one-line-code** style. **torchlm** also support **training** and **inference** of some awesome models for face landmarks detection, such as YOLOX, YOLOv5, ResNet, MobileNet, ShuffleNet and PIPNet, etc.
 <div align='center'>
-  <img src='docs/res/605.jpg' height="100px" width="100px">
-  <img src='docs/res/802.jpg' height="100px" width="100px">
-  <img src='docs/res/92.jpg' height="100px" width="100px">
-  <img src='docs/res/234.jpg' height="100px" width="100px">
-  <img src='docs/res/906.jpg' height="100px" width="100px">
-  <img src='docs/res/825.jpg' height="100px" width="100px">
-  <img src='docs/res/388.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_76.jpg' height="100px" width="100px">
+  <img src='docs/assets/pipnet0.jpg' height="100px" width="100px">
+  <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="100px" width="100px">
+  <img src='docs/assets/pipnet_shaolin_soccer.gif' height="100px" width="100px">
+  <img src='docs/assets/pipnet_WFLW_model.gif' height="100px" width="100px">
 </div>  
 
 <p align="center"> ❤️ Star 🌟👆🏻 this repo to support me if it does any helps to you, thanks ~  </p>
@@ -89,10 +89,10 @@ transform = torchlm.LandmarksCompose([
   <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
   <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
   <img src='docs/res/2_wflw_76.jpg' height="100px" width="100px">
-  <img src='docs/assets/pipnet0.jpg' height="100px" width="100px">
-  <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="100px" width="100px">
-  <img src='docs/assets/pipnet_shaolin_soccer.gif' height="100px" width="100px">
-  <img src='docs/assets/pipnet_WFLW_model.gif' height="100px" width="100px">
+  <img src='docs/res/2_wflw_162.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_229.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_440.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_478.jpg' height="100px" width="100px">
 </div>  
 
 * **bind** **80+** torchvision and albumentations's transforms through **torchlm.bind**
