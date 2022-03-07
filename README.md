@@ -29,7 +29,7 @@
 * High level pipeline for **training** and **inference**.
 * Provides **30+** native landmarks data augmentations.
 * Can **bind 80+** transforms from torchvision and albumentations with **one-line-code**.
-* Support awesome models for landmarks detection, such as YOLOX, YOLOv5, ResNet, MobileNet, ShuffleNet and PIPNet, etc.
+* Support awesome models for face landmarks detection, such as YOLOX, YOLOv5, ResNet, MobileNet, ShuffleNet and PIPNet, etc.
 
 ## 🆕 What's New
 * [2022/03/08]: Add **PIPNet**: [Towards Efficient Facial Landmark Detection in the Wild, CVPR2021](https://github.com/jhb86253817/PIPNet)
