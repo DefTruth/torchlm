@@ -12,7 +12,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, support **training** and **inference**. **torchlm** is aims at only focus on any landmark detection, such as face landmarks. It provides **30+** native data augmentations and can **bind** with **80+** transforms from torchvision and albumentations with **one-line-code** style. **torchlm** also support **training** and **inference** of some awesome models for face landmarks detection, such as YOLOX, YOLOv5, ResNet, MobileNet, ShuffleNet and PIPNet, etc.
+**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, support **training** and **inference**. **torchlm** is aims at only focus on any landmark detection, such as face landmarks. 
 <div align='center'>
   <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
   <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
@@ -25,8 +25,12 @@
 
 <p align="center"> ❤️ Star 🌟👆🏻 this repo to support me if it does any helps to you, thanks ~  </p>
 
+## 👋 Core Features
+* Provides **30+** native landmarks data augmentations.
+* Can **bind 80+** transforms from torchvision and albumentations with **one-line-code**.
+* Support awesome models for landmarks detection, such as YOLOX, YOLOv5, ResNet, MobileNet, ShuffleNet and PIPNet, etc.
 
-# 🆕 What's New
+## 🆕 What's New
 * [2022/03/08]: Add **PIPNet**: [Towards Efficient Facial Landmark Detection in the Wild, CVPR2021](https://github.com/jhb86253817/PIPNet)
 * [2022/02/13]: Add **30+** native data augmentations and **bind** **80+** transforms from torchvision and albumentations.
 
@@ -70,7 +74,7 @@ pip uninstall torchlm  # if you have installed torchlm
 pip install torchlm # will also install deps, e.g opencv
 ```
 
-### Data Augmentation
+### 🌟🌟Data Augmentation
 **torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. No matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. 
 
 * use almost **30+** native transforms from **torchlm** directly
@@ -161,7 +165,7 @@ LandmarksRandomTranslate() Execution Flag: False
 </details>
 
 
-### Training
+### 🎉🎉Training
 In **torchlm**, each model have a high level and user-friendly API named `training`, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
 ```python
 from torchlm.models import pipnet
@@ -206,7 +210,7 @@ Please jump to the entry point of the function for the detail documentations of 
 
 ✅ = known work and official supported, ❔ = in my plan, but not coming soon.
 
-### Inference
+### 👀👇 Inference
 #### C++ API
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 #### Python API
