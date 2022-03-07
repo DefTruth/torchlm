@@ -12,7 +12,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, support **training** and **inference**. **torchlm** is aims at only focus on any landmark detection, such as face landmarks. 
+**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, support **training** and **inference**. **torchlm** is aims to build a high level pipeline for face landmarks detection. 
 <div align='center'>
   <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
   <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
@@ -26,6 +26,7 @@
 <p align="center"> ❤️ Star 🌟👆🏻 this repo to support me if it does any helps to you, thanks ~  </p>
 
 ## 👋 Core Features
+* High level pipeline for **training** and **inference**.
 * Provides **30+** native landmarks data augmentations.
 * Can **bind 80+** transforms from torchvision and albumentations with **one-line-code**.
 * Support awesome models for landmarks detection, such as YOLOX, YOLOv5, ResNet, MobileNet, ShuffleNet and PIPNet, etc.
