@@ -86,9 +86,9 @@ transform = torchlm.LandmarksCompose([
 ])
 ```  
 <div align='center'>
-  <img src='docs/res/605.jpg' height="100px" width="100px">
-  <img src='docs/res/802.jpg' height="100px" width="100px">
-  <img src='docs/res/92.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
+  <img src='docs/res/2_wflw_76.jpg' height="100px" width="100px">
   <img src='docs/assets/pipnet0.jpg' height="100px" width="100px">
   <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="100px" width="100px">
   <img src='docs/assets/pipnet_shaolin_soccer.gif' height="100px" width="100px">
