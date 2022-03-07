@@ -215,7 +215,7 @@ Please jump to the entry point of the function for the detail documentations of 
 #### C++ API
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 #### Python API
-In **torchlm**, we offer a high level API named `torchlm.runtime.bind` to bind any models in torchlm and then you can run the `torchlm.runtime.forward` API to get the output of detected landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
+In **torchlm**, we offer a high level API named `runtime.bind` to bind any models in torchlm and then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
 ```python
 import cv2
 import torchlm
