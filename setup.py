@@ -25,14 +25,14 @@ setuptools.setup(
     url="https://github.com/DefTruth/torchlm",
     packages=setuptools.find_packages(),
     install_requires=[
-        "opencv-python-headless>=4.5.2",
+        "opencv-python-headless>=4.3.0",
         "numpy>=1.14.4",
         "torch>=1.6.0",
         "torchvision>=0.8.0",
         "albumentations>=1.1.0",
         "onnx>=1.8.0",
         "onnxruntime>=1.7.0",
-        "tqdm>=4.60.0"
+        "tqdm>=4.10.0"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

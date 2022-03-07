@@ -157,6 +157,33 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
             coordinates_already_normalized: Optional[bool] = False,
             **kwargs: Any  # params for DataLoader
     ) -> nn.Module:
+        """
+        :param annotation_path: the path to a annotation file, the format must be
+           "img0_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
+           "img1_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
+           "img2_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
+           "img3_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
+           ...
+        :param criterion_cls: loss criterion for PIPNet heatmap classification, default MSELoss
+        :param criterion_reg: loss criterion for PIPNet offsets regression, default L1Loss
+        :param learning_rate: learning rate, default 0.0001
+        :param cls_loss_weight: weight for heatmap classification
+        :param reg_loss_weight: weight for offsets regression
+        :param num_nb: the number of Nearest-neighbor landmarks for NRM, default 10
+        :param num_epochs: the number of training epochs
+        :param save_dir: the dir to save checkpoints
+        :param save_interval: the interval to save checkpoints
+        :param save_prefix: the prefix to save checkpoints, the saved name would look like
+         {save_prefix}-epoch{epoch}-loss{epoch_loss}.pth
+        :param decay_steps: decay steps for learning rate
+        :param decay_gamma: decay gamma for learning rate
+        :param device: training device, default cuda.
+        :param transform: user specific transform. If None, torchlm will build a default transform,
+         more details can be found at `torchlm.transforms.build_default_transform`
+        :param coordinates_already_normalized: denoted the label in annotation_path is normalized(by image size) of not
+        :param kwargs:  params for DataLoader
+        :return: A trained model.
+        """
         device = device if torch.cuda.is_available() else "cpu"
         # prepare dataset
         default_dataset = _PIPTrainDataset(
