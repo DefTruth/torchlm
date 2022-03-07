@@ -12,7 +12,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is a PyTorch landmarks-only library with **100+ data augmentations**, support **training** and **inference**. **torchlm** is aims to build a high level pipeline for face landmarks detection. 
+**torchlm** is aims to build a high level pipeline for face landmarks detection, support **100+ data augmentations**, **training** and **inference**, can can easily install with **pip**.
 <div align='center'>
   <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
   <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
