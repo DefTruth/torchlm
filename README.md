@@ -14,6 +14,10 @@
 ## 🤗 Introduction
 **torchlm** is aims to build a high level pipeline for face landmarks detection, it supports **training**, **inference** and **100+ data augmentations**, can easily install with **pip**.
 <div align='center'>
+  <img src='docs/assets/torchlm-0.png' height="100px" width="720px">
+</div>  
+<!---
+<div align='center'>
   <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
   <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
   <img src='docs/res/2_wflw_76.jpg' height="100px" width="100px">
@@ -22,6 +26,7 @@
   <img src='docs/assets/pipnet_shaolin_soccer.gif' height="100px" width="100px">
   <img src='docs/assets/pipnet_WFLW_model.gif' height="100px" width="100px">
 </div>  
+--->
 
 <p align="center"> ❤️ Star 🌟👆🏻 this repo to support me if it does any helps to you, thanks ~  </p>
 
@@ -254,11 +259,20 @@ Please jump to the entry point of the function for the detail documentations of 
 
 ✅ = known work and official supported, ❔ = in my plan, but not coming soon.
 
+### 🔥🔥Performance(@NME)
+
+|Model|Backbone|Head|300W|COFW|AFLW|WFLW|
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+|PIPNet|MobileNetV2|Heatmap+Regression+NRM|3.40|3.43|1.52|4.79|
+|PIPNet|ResNet18|Heatmap+Regression+NRM|3.36|3.31|1.48|4.47|
+|PIPNet|ResNet50|Heatmap+Regression+NRM|3.34|3.18|1.44|4.48|
+|PIPNet|ResNet101|Heatmap+Regression+NRM|3.19|3.08|1.42|4.31|
+
 ### 👀👇 Inference
 #### C++ API
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 #### Python API
-In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together in **torchlm** and then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
+In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together in **torchlm** and then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
 ```python
 import cv2
 import torchlm
