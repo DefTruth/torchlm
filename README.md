@@ -100,7 +100,7 @@ transform = torchlm.LandmarksCompose([
   <img src='docs/res/2_wflw_478.jpg' height="100px" width="100px">
 </div>  
 
-Also, a user-friendly API named `torchlm.build_default_transform` is available to build a default transform pipeline.
+Also, a user-friendly API `build_default_transform` is available to build a default transform pipeline.
 ```python
 transform = torchlm.build_default_transform(
     input_size=(input_size, input_size),
@@ -180,11 +180,12 @@ LandmarksRandomTranslate() Execution Flag: False
 
 
 ### 🎉🎉Training
-In **torchlm**, each model have a high level and user-friendly API named `training`, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
 <div align='center'>
-  <img src='docs/assets/detection_heads_pipnet.png' height="200px" width="350px">
-  <img src='docs/assets/speed_pipnet.png' height="200px" width="350px">
+  <img src='docs/assets/detection_heads_pipnet.png' height="200px" width="370px">
+  <img src='docs/assets/speed_pipnet.png' height="200px" width="370px">
 </div>  
+
+In **torchlm**, each model have a high level and user-friendly API named `training`, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
 
 ```python
 from torchlm.models import pipnet
