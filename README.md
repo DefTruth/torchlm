@@ -109,7 +109,7 @@ transform = torchlm.build_default_transform(
     force_norm_before_mean_std=True,  # img/=255. first
     rotate=30,
     keep_aspect=False,
-    to_tensor=False
+    to_tensor=False  # array -> Tensor & HWC -> CHW
 )
 ```
 
@@ -225,7 +225,7 @@ model.training(
 ) -> nn.Module:
 ```  
 <details>
-<summary> How to train PIPNet using your custom dataset and meanface setting?  </summary>
+<summary> How to train PIPNet in your own dataset and custom meanface settings?  </summary>
 
 * setup your custom meanface and nearest-neighbor landmarks through `set_custom_meanface` method, this method will calculate the distance between landmarks in meanface and auto setup the nearest-neighbors for each landmarks.
 
