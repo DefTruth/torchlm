@@ -12,7 +12,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is aims to build a high level pipeline for face landmarks detection, support **100+ data augmentations**, **training** and **inference**, can can easily install with **pip**.
+**torchlm** is aims to build a high level pipeline for face landmarks detection, it supports **training**, **inference** and **100+ data augmentations**, can easily install with **pip**.
 <div align='center'>
   <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
   <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
