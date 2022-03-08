@@ -38,7 +38,7 @@
 ## 🛠️ Usage
 
 ### Requirements
-* opencv-python-headless>=4.5.2
+* opencv-python-headless>=4.3.0
 * numpy>=1.14.4
 * torch>=1.6.0
 * torchvision>=0.8.0
