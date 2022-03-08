@@ -8,7 +8,7 @@
   <img src=https://img.shields.io/badge/macos|linux|windows-pass-skyblue.svg >
   <img src=https://img.shields.io/badge/license-MIT-lightblue.svg >
 </div>   
-<p align="center">English | <a href="docs/api/transforms.md">中文文档</a></p>
+<p align="center">English | <a href="docs/api/transforms.md">中文文档</a> | <a href="https://www.zhihu.com/column/c_1426666301352218624">知乎专栏</a> | <a href="https://pepy.tech/project/torchlm">下载统计</a></p>
 
 
 ## 🤗 Introduction
@@ -38,7 +38,7 @@
 ## 🛠️ Usage
 
 ### Requirements
-* opencv-python-headless>=4.5.2
+* opencv-python-headless>=4.3.0
 * numpy>=1.14.4
 * torch>=1.6.0
 * torchvision>=0.8.0
@@ -109,7 +109,7 @@ transform = torchlm.build_default_transform(
     force_norm_before_mean_std=True,  # img/=255. first
     rotate=30,
     keep_aspect=False,
-    to_tensor=False
+    to_tensor=False  # array -> Tensor & HWC -> CHW
 )
 ```
 
@@ -225,7 +225,7 @@ model.training(
 ) -> nn.Module:
 ```  
 <details>
-<summary> How to train PIPNet using your custom dataset and meanface setting?  </summary>
+<summary> How to train PIPNet in your own dataset and custom meanface settings?  </summary>
 
 * setup your custom meanface and nearest-neighbor landmarks through `set_custom_meanface` method, this method will calculate the distance between landmarks in meanface and auto setup the nearest-neighbors for each landmarks.
 
