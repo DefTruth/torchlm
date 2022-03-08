@@ -159,10 +159,10 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
     ) -> nn.Module:
         """
         :param annotation_path: the path to a annotation file, the format must be
-           "img0_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
-           "img1_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
-           "img2_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
-           "img3_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
+           "img0_path x0 y0 x1 y1 ... xn-1,yn-1"
+           "img1_path x0 y0 x1 y1 ... xn-1,yn-1"
+           "img2_path x0 y0 x1 y1 ... xn-1,yn-1"
+           "img3_path x0 y0 x1 y1 ... xn-1,yn-1"
            ...
         :param criterion_cls: loss criterion for PIPNet heatmap classification, default MSELoss
         :param criterion_reg: loss criterion for PIPNet offsets regression, default L1Loss
