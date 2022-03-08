@@ -32,7 +32,7 @@ __all__ = [
     "pipnet"
 ]
 
-model_urls_root_r16 = "https://github.com/DefTrtuh/torchlm/releases/download/v0.1.6-alpha"
+model_urls_root_r16 = "https://github.com/DefTruth/torchlm/releases/download/torchlm-0.1.6-alpha/"
 
 model_urls = {
     # Paths for torchlm v0.1.6 PIPNet's pretrained weights
@@ -96,6 +96,32 @@ class PIPNetResNet(_PIPNetImpl):
         self._make_extra_layers(inplane=self.inplane, plane=self.plane)
         # setup det headers
         self._make_det_headers(plane=self.plane)
+
+    def set_custom_meanface(
+            self,
+            custom_meanface_file_or_string: str
+    ) -> bool:
+        """
+        :param custom_meanface_file_or_string: a long string or a file contains normalized
+        or un-normalized meanface coords, the format is "x0,y0,x1,y1,x2,y2,...,xn-1,yn-1".
+        :return: status, True if successful.
+        """
+        old_num_lms = self.num_lms
+        if super(PIPNetResNet, self).set_custom_meanface(
+            custom_meanface_file_or_string=custom_meanface_file_or_string
+        ):
+            # update detect headers and extra layers according to new num_lms
+            if self.num_lms != old_num_lms:
+                # setup extra layers
+                self._make_extra_layers(inplane=self.inplane, plane=self.plane)
+                # setup det headers
+                self._make_det_headers(plane=self.plane)
+                warnings.warn(f"update detect headers and extra"
+                              f" layers according to new num_lms: "
+                              f"{self.num_lms}, the old num_lms "
+                              f"is: {old_num_lms}")
+            return True
+        return False
 
     def _make_extra_layers(
             self,
@@ -252,6 +278,30 @@ class PIPNetMobileNetV2(_PIPNetImpl):
         self.plane = 1280
         # setup det headers
         self._make_det_headers(plane=self.plane)
+
+    def set_custom_meanface(
+            self,
+            custom_meanface_file_or_string: str
+    ) -> bool:
+        """
+        :param custom_meanface_file_or_string: a long string or a file contains normalized
+        or un-normalized meanface coords, the format is "x0,y0,x1,y1,x2,y2,...,xn-1,yn-1".
+        :return: status, True if successful.
+        """
+        old_num_lms = self.num_lms
+        if super(PIPNetMobileNetV2, self).set_custom_meanface(
+            custom_meanface_file_or_string=custom_meanface_file_or_string
+        ):
+            # update detect headers and extra layers according to new num_lms
+            if self.num_lms != old_num_lms:
+                # setup det headers
+                self._make_det_headers(plane=self.plane)
+                warnings.warn(f"update detect headers and extra"
+                              f" layers according to new num_lms: "
+                              f"{self.num_lms}, the old num_lms "
+                              f"is: {old_num_lms}")
+            return True
+        return False
 
     def _make_det_headers(
             self,

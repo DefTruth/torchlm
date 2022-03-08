@@ -76,7 +76,7 @@ pip install torchlm # will also install deps, e.g opencv
 ```
 
 ### 🌟🌟Data Augmentation
-**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. No matter the input is a np.ndarray or a torch Tensor, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. 
+**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. 
 
 * use almost **30+** native transforms from **torchlm** directly
 ```python
@@ -99,6 +99,19 @@ transform = torchlm.LandmarksCompose([
   <img src='docs/res/2_wflw_440.jpg' height="100px" width="100px">
   <img src='docs/res/2_wflw_478.jpg' height="100px" width="100px">
 </div>  
+
+Also, a user-friendly API `build_default_transform` is available to build a default transform pipeline.
+```python
+transform = torchlm.build_default_transform(
+    input_size=(input_size, input_size),
+    mean=[0.485, 0.456, 0.406],
+    std=[0.229, 0.224, 0.225],
+    force_norm_before_mean_std=True,  # img/=255. first
+    rotate=30,
+    keep_aspect=False,
+    to_tensor=False
+)
+```
 
 * **bind** **80+** torchvision and albumentations's transforms through **torchlm.bind**
 ```python
@@ -167,7 +180,13 @@ LandmarksRandomTranslate() Execution Flag: False
 
 
 ### 🎉🎉Training
+<div align='center'>
+  <img src='docs/assets/detection_heads_pipnet.png' height="200px" width="370px">
+  <img src='docs/assets/speed_pipnet.png' height="200px" width="370px">
+</div>  
+
 In **torchlm**, each model have a high level and user-friendly API named `training`, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
+
 ```python
 from torchlm.models import pipnet
 
@@ -204,10 +223,34 @@ model.training(
         coordinates_already_normalized: Optional[bool] = False,
         **kwargs: Any  # params for DataLoader
 ) -> nn.Module:
+```  
+<details>
+<summary> How to train PIPNet using your custom dataset and meanface setting?  </summary>
+
+* setup your custom meanface and nearest-neighbor landmarks through `set_custom_meanface` method, this method will calculate the distance between landmarks in meanface and auto setup the nearest-neighbors for each landmarks.
+
+```python
+def set_custom_meanface(
+        self,
+        custom_meanface_file_or_string: str
+) -> bool:
+    """
+    :param custom_meanface_file_or_string: a long string or a file contains normalized
+    or un-normalized meanface coords, the format is "x0,y0,x1,y1,x2,y2,...,xn-1,yn-1".
+    :return: status, True if successful.
+    """
 ```
+
+
+</details>
+
 Please jump to the entry point of the function for the detail documentations of **training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L159](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). Further, the model implementation plan is as follows:
 
-❔ YOLOX ❔ YOLOv5 ❔ NanoDet ✅ [PIPNet](https://github.com/jhb86253817/PIPNet) ❔ ResNet ❔ MobileNet ❔ ShuffleNet ❔...
+
+|[PIPNet](https://github.com/jhb86253817/PIPNet)|YOLOX|YOLOv5|NanoDet|ResNet|MobileNet|ShuffleNet|VIT|...|
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:
+|✅|❔|❔|❔|❔|❔|❔|❔|❔|❔|❔|
+
 
 ✅ = known work and official supported, ❔ = in my plan, but not coming soon.
 
@@ -215,7 +258,7 @@ Please jump to the entry point of the function for the detail documentations of 
 #### C++ API
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 #### Python API
-In **torchlm**, we offer a high level API named `runtime.bind` to bind any models in torchlm and then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
+In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together in **torchlm** and then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
 ```python
 import cv2
 import torchlm
@@ -246,7 +289,6 @@ def test_pipnet_runtime():
     landmarks, bboxes = torchlm.runtime.forward(image)
     image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
     image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
-
     cv2.imwrite(save_path, image)
 ```
 <div align='center'>
