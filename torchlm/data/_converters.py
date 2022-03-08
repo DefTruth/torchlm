@@ -11,3 +11,11 @@ class BaseConverter(object):
     @abstractmethod
     def convert(self, *args, **kwargs):
         raise NotImplementedError
+
+
+class WFLWConverter(BaseConverter):
+    def __init__(self):
+        super(WFLWConverter, self).__init__()
+
+    def convert(self, *args, **kwargs):
+        pass
