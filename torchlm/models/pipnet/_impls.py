@@ -86,7 +86,14 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
                     f"Please check and setup meanface carefully before"
                     f"running PIPNet ..."
                 )
-                self.meanface_status = False
+                self.meanface_type = custom_meanface_type
+                self.meanface_indices = custom_meanface_indices
+                self.reverse_index1 = custom_reverse_index1
+                self.reverse_index2 = custom_reverse_index2
+                self.max_len = custom_max_len
+                # update num_lms
+                self.num_lms = custom_meanface_lms
+                self.meanface_status = True
             else:
                 # replace if successful
                 self.meanface_type = custom_meanface_type
@@ -175,8 +182,8 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
         :param save_interval: the interval to save checkpoints
         :param save_prefix: the prefix to save checkpoints, the saved name would look like
          {save_prefix}-epoch{epoch}-loss{epoch_loss}.pth
-        :param decay_steps: decay steps for learning rate
-        :param decay_gamma: decay gamma for learning rate
+        :param decay_steps: decay steps for learning rate scheduler
+        :param decay_gamma: decay gamma for learning rate scheduler
         :param device: training device, default cuda.
         :param transform: user specific transform. If None, torchlm will build a default transform,
          more details can be found at `torchlm.transforms.build_default_transform`
