@@ -40,6 +40,22 @@
 * [2022/03/08]: Add **PIPNet**: [Towards Efficient Facial Landmark Detection in the Wild, CVPR2021](https://github.com/jhb86253817/PIPNet)
 * [2022/02/13]: Add **30+** native data augmentations and **bind** **80+** transforms from torchvision and albumentations.
 
+## ✅ Supported Models Matrix
+✅ = known work and official supported, ❔ = in my plan, but not coming soon.
+
+|[PIPNet](https://github.com/jhb86253817/PIPNet)|YOLOX|YOLOv5|NanoDet|ResNet|MobileNet|ShuffleNet|VIT|...|
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:
+|✅|❔|❔|❔|❔|❔|❔|❔|❔|❔|❔|
+
+## 🔥🔥Performance(@NME)
+
+|Model|Backbone|Head|300W|COFW|AFLW|WFLW|Download|
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+|PIPNet|MobileNetV2|Heatmap+Regression+NRM|3.40|3.43|1.52|4.79| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
+|PIPNet|ResNet18|Heatmap+Regression+NRM|3.36|3.31|1.48|4.47| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
+|PIPNet|ResNet50|Heatmap+Regression+NRM|3.34|3.18|1.44|4.48| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
+|PIPNet|ResNet101|Heatmap+Regression+NRM|3.19|3.08|1.42|4.31| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
+
 ## 🛠️ Usage
 
 ### Requirements
@@ -249,24 +265,8 @@ def set_custom_meanface(
 
 </details>
 
-Please jump to the entry point of the function for the detail documentations of **training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L159](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). Further, the model implementation plan is as follows:
+Please jump to the entry point of the function for the detail documentations of **training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L159](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). 
 
-
-|[PIPNet](https://github.com/jhb86253817/PIPNet)|YOLOX|YOLOv5|NanoDet|ResNet|MobileNet|ShuffleNet|VIT|...|
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:
-|✅|❔|❔|❔|❔|❔|❔|❔|❔|❔|❔|
-
-
-✅ = known work and official supported, ❔ = in my plan, but not coming soon.
-
-### 🔥🔥Performance(@NME)
-
-|Model|Backbone|Head|300W|COFW|AFLW|WFLW|
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-|PIPNet|MobileNetV2|Heatmap+Regression+NRM|3.40|3.43|1.52|4.79|
-|PIPNet|ResNet18|Heatmap+Regression+NRM|3.36|3.31|1.48|4.47|
-|PIPNet|ResNet50|Heatmap+Regression+NRM|3.34|3.18|1.44|4.48|
-|PIPNet|ResNet101|Heatmap+Regression+NRM|3.19|3.08|1.42|4.31|
 
 ### 👀👇 Inference
 #### C++ API
