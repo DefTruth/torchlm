@@ -7,6 +7,9 @@ from typing import Tuple, Optional, List, Union
 
 from ..data import annotools
 
+__all__ = ["LandmarksWFLWConverter", "LandmarksALFWConverter",
+           "Landmarks300WConverter", "LandmarksCOFWConverter"]
+
 
 class BaseConverter(object):
     __metaclass__ = ABCMeta
@@ -16,14 +19,14 @@ class BaseConverter(object):
         raise NotImplementedError
 
 
-class WFLWConverter(BaseConverter):
+class LandmarksWFLWConverter(BaseConverter):
     def __init__(
             self,
             wflw_dir: Optional[str] = "./data/WFLW",
             save_dir: Optional[str] = "./data/WFLW/converted",
             extend: Optional[float] = 0.2
     ):
-        super(WFLWConverter, self).__init__()
+        super(LandmarksWFLWConverter, self).__init__()
         self.wflw_dir = wflw_dir
         self.save_dir = save_dir
         self.scale = 1. + extend
@@ -49,7 +52,7 @@ class WFLWConverter(BaseConverter):
             self.wflw_annotation_dir, "list_98pt_rect_attr_test.txt"
         )
 
-    def convert(self, *args, **kwargs):
+    def convert(self):
         train_annotations, test_annotations = self._fetch_annotations()
         train_anno_file = open(self.save_train_annotation_path, "w")
         test_anno_file = open(self.save_test_annotation_path, "w")
@@ -132,3 +135,15 @@ class WFLWConverter(BaseConverter):
             test_annotations.extend(fin.readlines())
 
         return train_annotations, test_annotations
+
+
+class Landmarks300WConverter:
+    ...
+
+
+class LandmarksCOFWConverter:
+    ...
+
+
+class LandmarksALFWConverter:
+    ...
