@@ -45,10 +45,20 @@ class WFLWConverter(BaseConverter):
         )
 
     def convert(self, *args, **kwargs):
-        pass
+        train_annotations, test_annotations = self._fetch_annotations()
 
     def _fetch_annotations(self) -> Tuple[List[str], List[str]]:
         assert os.path.exists(self.source_train_annotation_path)
         assert os.path.exists(self.source_test_annotation_path)
+        train_annotations = []
+        test_annotations = []
+
+        with open(self.source_train_annotation_path, "r") as fin:
+            train_annotations.extend(fin.readlines())
+
+        with open(self.source_test_annotation_path, "r") as fin:
+            test_annotations.extend(fin.readlines())
+
+        return train_annotations, test_annotations
 
 
