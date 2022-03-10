@@ -49,6 +49,11 @@
 
 ## 🔥🔥Performance(@NME)
 
+<div align='center'>
+  <img src='docs/assets/detection_heads_pipnet.png' height="150px" width="400px">
+  <img src='docs/assets/speed_pipnet.png' height="150px" width="400px">
+</div>  
+
 |Model|Backbone|Head|300W|COFW|AFLW|WFLW|Download|
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 |PIPNet|MobileNetV2|Heatmap+Regression+NRM|3.40|3.43|1.52|4.79| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
@@ -200,12 +205,7 @@ LandmarksRandomTranslate() Execution Flag: False
 </details>
 
 
-### 🎉🎉Training
-<div align='center'>
-  <img src='docs/assets/detection_heads_pipnet.png' height="200px" width="370px">
-  <img src='docs/assets/speed_pipnet.png' height="200px" width="370px">
-</div>  
-
+### 🎉🎉Training  
 In **torchlm**, each model have a high level and user-friendly API named `training`, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
 
 ```python
@@ -272,38 +272,35 @@ Please jump to the entry point of the function for the detail documentations of 
 #### C++ API
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 #### Python API
-In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together in **torchlm** and then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
+In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
 ```python
 import cv2
 import torchlm
 from torchlm.tools import faceboxesv2
 from torchlm.models import pipnet
 
-def test_pipnet_runtime():
-    img_path = "./1.jpg"
-    save_path = "./1.jpg"
-    checkpoint = "./pipnet_resnet18_10x98x32x256_wflw.pth"
-    image = cv2.imread(img_path)
+img_path = "./1.jpg"
+save_path = "./1.jpg"
+image = cv2.imread(img_path)
 
-    torchlm.runtime.bind(faceboxesv2())
-    torchlm.runtime.bind(
-        pipnet(
-            backbone="resnet18",
-            pretrained=True,
-            num_nb=10,
-            num_lms=98,
-            net_stride=32,
-            input_size=256,
-            meanface_type="wflw",
-            backbone_pretrained=True,
-            map_location="cpu",
-            checkpoint=checkpoint
-        )
+torchlm.runtime.bind(faceboxesv2())
+torchlm.runtime.bind(
+  pipnet(
+    backbone="resnet18",
+    pretrained=True,  # will auto download from latest release.
+    num_nb=10,
+    num_lms=98,
+    net_stride=32,
+    input_size=256,
+    meanface_type="wflw",
+    map_location="cpu",
+    checkpoint=None
     )
-    landmarks, bboxes = torchlm.runtime.forward(image)
-    image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
-    image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
-    cv2.imwrite(save_path, image)
+)
+landmarks, bboxes = torchlm.runtime.forward(image)
+image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
+image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
+cv2.imwrite(save_path, image)    
 ```
 <div align='center'>
   <img src='docs/assets/pipnet0.jpg' height="180px" width="180px">
