@@ -46,6 +46,9 @@ class WFLWConverter(BaseConverter):
 
     def convert(self, *args, **kwargs):
         train_annotations, test_annotations = self._fetch_annotations()
+        output_train_annotation = open(self.save_train_annotation_path, "w")
+        output_test_annotation = open(self.save_test_annotation_path, "w")
+
 
     def _fetch_annotations(self) -> Tuple[List[str], List[str]]:
         assert os.path.exists(self.source_train_annotation_path)
