@@ -50,8 +50,8 @@
 ## 🔥🔥Performance(@NME)
 
 <div align='center'>
-  <img src='docs/assets/detection_heads_pipnet.png' height="170px" width="390px">
-  <img src='docs/assets/speed_pipnet.png' height="170px" width="390px">
+  <img src='docs/assets/detection_heads_pipnet.png' height="150px" width="400px">
+  <img src='docs/assets/speed_pipnet.png' height="150px" width="400px">
 </div>  
 
 |Model|Backbone|Head|300W|COFW|AFLW|WFLW|Download|
