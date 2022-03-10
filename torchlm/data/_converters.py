@@ -1,8 +1,11 @@
 import os
 import cv2
+import tqdm
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Optional, List, Any, Union
+from typing import Tuple, Optional, List, Union
+
+from ..data import annotools
 
 
 class BaseConverter(object):
@@ -43,47 +46,80 @@ class WFLWConverter(BaseConverter):
             self.wflw_annotation_dir, "list_98pt_rect_attr_train.txt"
         )
         self.source_test_annotation_path = os.path.join(
-            self.wflw_annotation_dir, "list_98pt_rect_attr_train.txt"
+            self.wflw_annotation_dir, "list_98pt_rect_attr_test.txt"
         )
 
     def convert(self, *args, **kwargs):
         train_annotations, test_annotations = self._fetch_annotations()
-        output_train_annotation = open(self.save_train_annotation_path, "w")
-        output_test_annotation = open(self.save_test_annotation_path, "w")
+        train_anno_file = open(self.save_train_annotation_path, "w")
+        test_anno_file = open(self.save_test_annotation_path, "w")
 
-    def process_wflw(self, anno: str) -> Tuple[np.ndarray, np.ndarray]:
+        for anno in tqdm.tqdm(train_annotations):
+            crop, landmarks, new_img_name = self._process_wflw(anno=anno)
+            if crop is None or landmarks is None:
+                continue
+            new_img_path = os.path.join(self.save_train_image_dir, new_img_name)
+            cv2.imwrite(new_img_path, crop)
+            annotation_string = annotools.format_annotation(
+                img_path=new_img_path, lms_gt=landmarks
+            )
+            train_anno_file.write(annotation_string + "\n")
+        train_anno_file.close()
+
+        for anno in tqdm.tqdm(test_anno_file):
+            crop, landmarks, new_img_name = self._process_wflw(anno=anno)
+            if crop is None or landmarks is None:
+                continue
+            new_img_path = os.path.join(self.save_test_image_dir, new_img_name)
+            cv2.imwrite(new_img_path, crop)
+            annotation_string = annotools.format_annotation(
+                img_path=new_img_path, lms_gt=landmarks
+            )
+            test_anno_file.write(annotation_string + "\n")
+        test_anno_file.close()
+
+    def _process_wflw(self, anno: str) \
+            -> Union[Tuple[np.ndarray, np.ndarray, str],
+                     Tuple[None, None, None]]:
+        anno = anno.strip("\n").strip(" ").split(" ")
         image_name = anno[-1]
         image_path = os.path.join(self.wflw_images_dir, image_name)
+        if not os.path.exists(image_path):
+            return None, None, None
+
         image = cv2.imread(image_path)
         image_height, image_width, _ = image.shape
         # 98 gt landmarks
-        lms = anno[:196]
-        lms = [float(x) for x in lms]
-        lms = np.array(lms).reshape(-1, 2)  # (98,2)
-        lms[:, 0] = np.minimum(np.maximum(0, lms[:, 0]), image_width)
-        lms[:, 1] = np.minimum(np.maximum(0, lms[:, 1]), image_height)
+        landmarks = anno[:196]
+        landmarks = [float(x) for x in landmarks]
+        landmarks = np.array(landmarks).reshape(-1, 2)  # (98,2)
+        landmarks[:, 0] = np.minimum(np.maximum(0, landmarks[:, 0]), image_width)
+        landmarks[:, 1] = np.minimum(np.maximum(0, landmarks[:, 1]), image_height)
         bbox = anno[196:200]
         bbox = [float(x) for x in bbox]
-        bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax = bbox
+        xmin, ymin, xmax, ymax = bbox
 
-        width = bbox_xmax - bbox_xmin
-        height = bbox_ymax - bbox_ymin
-        bbox_xmin -= width * (self.scale - 1) / 2
-        bbox_ymin -= height * (self.scale - 1) / 2
-        bbox_xmax += width * (self.scale - 1) / 2
-        bbox_ymax += height * (self.scale - 1) / 2
-        bbox_xmin = max(bbox_xmin, 0)
-        bbox_ymin = max(bbox_ymin, 0)
-        bbox_xmax = min(bbox_xmax, image_width - 1)
-        bbox_ymax = min(bbox_ymax, image_height - 1)
-        image_crop = image[int(bbox_ymin):int(bbox_ymax), int(bbox_xmin):int(bbox_xmax), :]
+        width = xmax - xmin
+        height = ymax - ymin
+        xmin -= width * (self.scale - 1) / 2
+        ymin -= height * (self.scale - 1) / 2
+        xmax += width * (self.scale - 1) / 2
+        ymax += height * (self.scale - 1) / 2
+        xmin = max(xmin, 0)
+        ymin = max(ymin, 0)
+        xmax = min(xmax, image_width - 1)
+        ymax = min(ymax, image_height - 1)
+        crop = image[int(ymin):int(ymax), int(xmin):int(xmax), :]
+        # adjust according to left-top corner
+        landmarks[:, 0] -= int(xmin)
+        landmarks[:, 1] -= int(ymin)
 
-        tmp1 = [bbox_xmin, bbox_ymin] * 98
-        tmp1 = np.array(tmp1)
-        lms = np.array(lms) - tmp1  # adjust according to left-top corner
-        return image_crop, lms
+        new_img_name = image_name.replace("/", "_")
+
+        return crop, landmarks, new_img_name
 
     def _fetch_annotations(self) -> Tuple[List[str], List[str]]:
+
         assert os.path.exists(self.source_train_annotation_path)
         assert os.path.exists(self.source_test_annotation_path)
         train_annotations = []

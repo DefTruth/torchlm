@@ -5,10 +5,10 @@ from typing import Tuple, List
 
 def fetch_annotations(annotation_path: str) -> List[str]:
     """fetch annotation strings from a specific file, this file should formatted as:
-       "img0_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
-       "img1_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
-       "img2_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
-       "img3_path img_path x0 y0 x1 y1 ... xn-1,yn-1"
+       "img0_path x0 y0 x1 y1 ... xn-1,yn-1"
+       "img1_path x0 y0 x1 y1 ... xn-1,yn-1"
+       "img2_path x0 y0 x1 y1 ... xn-1,yn-1"
+       "img3_path x0 y0 x1 y1 ... xn-1,yn-1"
        ...
     :param annotation_path:
     :return: annotations list
