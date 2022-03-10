@@ -51,7 +51,7 @@ class WFLWConverter(BaseConverter):
         output_train_annotation = open(self.save_train_annotation_path, "w")
         output_test_annotation = open(self.save_test_annotation_path, "w")
 
-    def process_wflw(self, anno: str):
+    def process_wflw(self, anno: str) -> Tuple[np.ndarray, np.ndarray]:
         image_name = anno[-1]
         image_path = os.path.join(self.wflw_images_dir, image_name)
         image = cv2.imread(image_path)
@@ -59,15 +59,9 @@ class WFLWConverter(BaseConverter):
         # 98 gt landmarks
         lms = anno[:196]
         lms = [float(x) for x in lms]
-        lms_x = lms[0::2]
-        lms_y = lms[1::2]
-        # bounder check
-        lms_x = [x if x >= 0 else 0 for x in lms_x]
-        lms_x = [x if x <= image_width else image_width for x in lms_x]
-        lms_y = [y if y >= 0 else 0 for y in lms_y]
-        lms_y = [y if y <= image_height else image_height for y in lms_y]
-        lms = [[x, y] for x, y in zip(lms_x, lms_y)]
-        lms = [x for z in lms for x in z]
+        lms = np.array(lms).reshape(-1, 2)  # (98,2)
+        lms[:, 0] = np.minimum(np.maximum(0, lms[:, 0]), image_width)
+        lms[:, 1] = np.minimum(np.maximum(0, lms[:, 1]), image_height)
         bbox = anno[196:200]
         bbox = [float(x) for x in bbox]
         bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax = bbox
@@ -82,20 +76,12 @@ class WFLWConverter(BaseConverter):
         bbox_ymin = max(bbox_ymin, 0)
         bbox_xmax = min(bbox_xmax, image_width - 1)
         bbox_ymax = min(bbox_ymax, image_height - 1)
-        width = bbox_xmax - bbox_xmin
-        height = bbox_ymax - bbox_ymin
         image_crop = image[int(bbox_ymin):int(bbox_ymax), int(bbox_xmin):int(bbox_xmax), :]
 
         tmp1 = [bbox_xmin, bbox_ymin] * 98
         tmp1 = np.array(tmp1)
-        tmp2 = [width, height] * 98
-        tmp2 = np.array(tmp2)
         lms = np.array(lms) - tmp1  # adjust according to left-top corner
-        lms = lms / tmp2  # normalized
-        lms = lms.tolist()
-        lms = zip(lms[0::2], lms[1::2])
-        return image_crop, list(lms)
-
+        return image_crop, lms
 
     def _fetch_annotations(self) -> Tuple[List[str], List[str]]:
         assert os.path.exists(self.source_train_annotation_path)
@@ -110,5 +96,3 @@ class WFLWConverter(BaseConverter):
             test_annotations.extend(fin.readlines())
 
         return train_annotations, test_annotations
-
-
