@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Optional, List, Any
+from typing import Tuple, Optional, List, Any, Union
 
 
 class BaseConverter(object):
@@ -16,12 +16,13 @@ class BaseConverter(object):
 class WFLWConverter(BaseConverter):
     def __init__(
             self,
-            wflw_dir: str = "./data/WFLW",
-            save_dir: str = "./data/WFLW/converted"
+            wflw_dir: Optional[str] = "./data/WFLW",
+            save_dir: Optional[str] = "./data/WFLW/converted"
     ):
         super(WFLWConverter, self).__init__()
         self.wflw_dir = wflw_dir
         self.save_dir = save_dir
+        assert os.path.exists(wflw_dir), "WFLW dataset not found."
         os.makedirs(save_dir, exist_ok=True)
         self.wflw_images_dir = os.path.join(wflw_dir, "WFLW_images")
         self.wflw_annotation_dir = os.path.join(
@@ -45,3 +46,9 @@ class WFLWConverter(BaseConverter):
 
     def convert(self, *args, **kwargs):
         pass
+
+    def _fetch_annotations(self) -> Tuple[List[str], List[str]]:
+        assert os.path.exists(self.source_train_annotation_path)
+        assert os.path.exists(self.source_test_annotation_path)
+
+

@@ -49,6 +49,11 @@
 
 ## 🔥🔥Performance(@NME)
 
+<div align='center'>
+  <img src='docs/assets/detection_heads_pipnet.png' height="200px" width="370px">
+  <img src='docs/assets/speed_pipnet.png' height="200px" width="370px">
+</div>  
+
 |Model|Backbone|Head|300W|COFW|AFLW|WFLW|Download|
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 |PIPNet|MobileNetV2|Heatmap+Regression+NRM|3.40|3.43|1.52|4.79| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
@@ -200,12 +205,7 @@ LandmarksRandomTranslate() Execution Flag: False
 </details>
 
 
-### 🎉🎉Training
-<div align='center'>
-  <img src='docs/assets/detection_heads_pipnet.png' height="200px" width="370px">
-  <img src='docs/assets/speed_pipnet.png' height="200px" width="370px">
-</div>  
-
+### 🎉🎉Training  
 In **torchlm**, each model have a high level and user-friendly API named `training`, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
 
 ```python
@@ -272,7 +272,7 @@ Please jump to the entry point of the function for the detail documentations of 
 #### C++ API
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
 #### Python API
-In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together in **torchlm** and then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
+In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
 ```python
 import cv2
 import torchlm
