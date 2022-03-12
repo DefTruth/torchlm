@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Tuple, Optional, List, Union
 
 from ..data import annotools
+from ..utils import draw_landmarks
 
 __all__ = ["LandmarksWFLWConverter", "LandmarksALFWConverter",
            "Landmarks300WConverter", "LandmarksCOFWConverter"]
@@ -16,6 +17,17 @@ class BaseConverter(object):
 
     @abstractmethod
     def convert(self, *args, **kwargs):
+        """Convert the annotations to a standard format.
+        "img0_path x0 y0 x1 y1 ... xn-1,yn-1"
+        "img1_path x0 y0 x1 y1 ... xn-1,yn-1"
+        "img2_path x0 y0 x1 y1 ... xn-1,yn-1"
+        "img3_path x0 y0 x1 y1 ... xn-1,yn-1"
+        ...
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def show(self, *args, **kwargs):
         raise NotImplementedError
 
 
@@ -25,9 +37,9 @@ class LandmarksWFLWConverter(BaseConverter):
             wflw_dir: Optional[str] = "./data/WFLW",
             save_dir: Optional[str] = "./data/WFLW/converted",
             extend: Optional[float] = 0.2,
-            rebuild: Optional[bool] = False,
+            rebuild: Optional[bool] = True,
             force_normalize: Optional[bool] = False,
-            force_absolute_path: Optional[bool] = False
+            force_absolute_path: Optional[bool] = True
     ):
         super(LandmarksWFLWConverter, self).__init__()
         self.wflw_dir = wflw_dir
@@ -69,37 +81,78 @@ class LandmarksWFLWConverter(BaseConverter):
         train_anno_file = open(self.save_train_annotation_path, "w")
         test_anno_file = open(self.save_test_annotation_path, "w")
 
-        for annotation in tqdm.tqdm(train_annotations):
+        for annotation in tqdm.tqdm(
+                train_annotations,
+                desc="converting train_annotations"
+        ):
             crop, landmarks, new_img_name = self._process_wflw(annotation=annotation)
             if crop is None or landmarks is None:
                 continue
             new_img_path = os.path.join(self.save_train_image_dir, new_img_name)
             if not self.rebuild:
-                if os.path.exists(new_img_path):
-                    continue
+                if not os.path.exists(new_img_path):
+                    cv2.imwrite(new_img_path, crop)
+            else:
+                cv2.imwrite(new_img_path, crop)
 
-            cv2.imwrite(new_img_path, crop)
             annotation_string = annotools.format_annotation(
                 img_path=new_img_path, lms_gt=landmarks
             )
             train_anno_file.write(annotation_string + "\n")
         train_anno_file.close()
 
-        for annotation in tqdm.tqdm(test_annotations):
+        for annotation in tqdm.tqdm(
+                test_annotations,
+                desc="converting test_annotations"
+        ):
             crop, landmarks, new_img_name = self._process_wflw(annotation=annotation)
             if crop is None or landmarks is None:
                 continue
             new_img_path = os.path.join(self.save_test_image_dir, new_img_name)
             if not self.rebuild:
-                if os.path.exists(new_img_path):
-                    continue
+                if not os.path.exists(new_img_path):
+                    cv2.imwrite(new_img_path, crop)
+            else:
+                cv2.imwrite(new_img_path, crop)
 
-            cv2.imwrite(new_img_path, crop)
             annotation_string = annotools.format_annotation(
                 img_path=new_img_path, lms_gt=landmarks
             )
             test_anno_file.write(annotation_string + "\n")
         test_anno_file.close()
+
+    def show(self, count: int = 10, show_dir: Optional[str] = None):
+        assert os.path.exists(self.save_train_annotation_path), \
+            f"{self.save_train_annotation_path} not found!"
+
+        with open(self.save_train_annotation_path, "r") as fin:
+            annotations = fin.readlines()[:count]
+
+        assert len(annotations) >= 1, "no annotations!"
+
+        if show_dir is None:
+            show_dir = os.path.join(self.save_dir, "show")
+            os.makedirs(show_dir, exist_ok=True)
+        else:
+            assert os.path.exists(show_dir)
+
+        for annotation_string in annotations:
+            img_path, lms_gt = annotools.decode_annotation(
+                annotation_string=annotation_string)
+            img_name = os.path.basename(img_path)
+            out_path = os.path.join(show_dir, img_name)
+
+            in_img: np.ndarray = cv2.imread(img_path)
+            if in_img is not None:
+                if self.force_normalize:
+                    h, w, _ = in_img.shape
+                    lms_gt[:, 0] *= w
+                    lms_gt[:, 1] *= h
+                out_img = draw_landmarks(in_img, landmarks=lms_gt)
+
+                cv2.imwrite(out_path, out_img)
+
+                print(f"saved show img to: {out_path} !")
 
     def _process_wflw(
             self,

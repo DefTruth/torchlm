@@ -19,6 +19,7 @@ from ._impls import (
     _PIPNetImpl,
     _PIPNet_Output_Type
 )
+from .._utils import freeze_module, freeze_bn
 
 __all__ = [
     "pipnet_resnet18_10x68x32x256_300w",
@@ -122,6 +123,33 @@ class PIPNetResNet(_PIPNetImpl):
                               f"is: {old_num_lms}")
             return True
         return False
+
+    def apply_freezing(
+            self,
+            backbone: Optional[bool] = True,
+            heads: Optional[bool] = False,
+            extra: Optional[bool] = False
+    ):
+        if backbone:
+            freeze_module(self.layer1)
+            freeze_module(self.layer2)
+            freeze_module(self.layer3)
+            freeze_module(self.layer4)
+        if heads:
+            freeze_module(self.cls_layer)
+            freeze_module(self.x_layer)
+            freeze_module(self.y_layer)
+            freeze_module(self.nb_x_layer)
+            freeze_module(self.nb_y_layer)
+        if extra:
+            if self.net_stride == 128:
+                freeze_module(self.layer5)
+                freeze_bn(self.bn5)
+                freeze_module(self.layer6)
+                freeze_bn(self.bn6)
+            elif self.net_stride == 64:
+                freeze_module(self.layer5)
+                freeze_bn(self.bn5)
 
     def _make_extra_layers(
             self,
@@ -303,6 +331,23 @@ class PIPNetMobileNetV2(_PIPNetImpl):
             return True
         return False
 
+    def apply_freezing(
+            self,
+            backbone: Optional[bool] = True,
+            heads: Optional[bool] = False
+    ):
+        if backbone:
+            freeze_module(self.layer1)
+            freeze_module(self.layer2)
+            freeze_module(self.layer3)
+            freeze_module(self.layer4)
+        if heads:
+            freeze_module(self.cls_layer)
+            freeze_module(self.x_layer)
+            freeze_module(self.y_layer)
+            freeze_module(self.nb_x_layer)
+            freeze_module(self.nb_y_layer)
+
     def _make_det_headers(
             self,
             plane: int = 1280
@@ -376,7 +421,7 @@ def pipnet(
         map_location: Optional[Union[str, torch.device]] = "cpu",
         checkpoint: Optional[str] = None,
         **kwargs: Any
-) -> _PIPNetImpl:
+) -> Union[PIPNetResNet, PIPNetMobileNetV2]:
     """
     :param arch: If arch is not None and pretrained is True, this function
      will try to load a pretrained PIPNet from torchlm's Github Repo. The format

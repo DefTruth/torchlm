@@ -61,9 +61,8 @@
 |PIPNet|ResNet50|Heatmap+Regression+NRM|3.34|3.18|1.44|4.48| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
 |PIPNet|ResNet101|Heatmap+Regression+NRM|3.19|3.08|1.42|4.31| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
 
-## 🛠️ Usage
 
-### Installation
+## 🛠️Installation
 you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). 
 ```shell
 pip3 install torchlm
@@ -81,8 +80,8 @@ pip install -e .
 <div id="torchlm-NOTE"></div>  
 
 
-### 🌟🌟Data Augmentation
-**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. 
+## 🌟🌟Data Augmentation
+**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks.
 
 * use almost **30+** native transforms from **torchlm** directly
 ```python
@@ -204,52 +203,106 @@ LandmarksRandomTranslate() Execution Flag: False
 
 </details>
 
+<details>
 
-### 🎉🎉Training  
-In **torchlm**, each model have a high level and user-friendly API named `training`, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet).
+<summary> more details about transform in torchlm </summary>  
+
+Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. 
+
+</details>
+
+## 🎉🎉Training  
+In **torchlm**, each model have two high level and user-friendly APIs named `apply_training` and `apply_freezing` for training. `apply_training` handle the training process and `apply_freezing` decide whether to freeze the backbone for fune-tuning.
+
+### Quick Start
+Here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). You can freeze backbone before fine-tuning through `apply_freezing`.
 
 ```python
 from torchlm.models import pipnet
-
-model = pipnet(backbone="resnet18", pretrained=False, num_nb=10, num_lms=98, net_stride=32,
+# will auto download pretrained weights from latest release if pretrained=True
+model = pipnet(backbone="resnet18", pretrained=True, num_nb=10, num_lms=98, net_stride=32,
                input_size=256, meanface_type="wflw", backbone_pretrained=True)
-
-model.training(
-    annotation_path: str,
-    criterion_cls: nn.Module = nn.MSELoss(),
-    criterion_reg: nn.Module = nn.L1Loss(),
-    learning_rate: float = 0.0001,
-    # ...
-    **kwargs: Any  # params for DataLoader
-) -> nn.Module:
+model.apply_freezing(backbone=True)
+model.apply_training(
+    annotation_path="../data/WFLW/convertd/train.txt",  # or fine-tuning your custom data
+    num_epochs=10,
+    learning_rate=0.0001,
+    save_dir="./save/pipnet",
+    save_prefix="pipnet-wflw-resnet18",
+    save_interval=1,
+    logging_interval=1,
+    device="cuda",
+    batch_size=16,
+    num_workers=4,
+    shuffle=True
+)
 ```  
+Please jump to the entry point of the function for the detail documentations of **apply_training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L166](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). You might see some logs if the training process is running: 
+
+```shell
+Parameters for DataLoader:  {'batch_size': 16, 'num_workers': 4, 'shuffle': True}
+Built _PIPTrainDataset: train count is 7500 !
+Epoch 0/9
+----------
+[Epoch 0/9, Batch 0/468] <Total loss: 0.968761> <cls loss: 0.115902> <x loss: 0.154434> <y loss: 0.217170> <nbx loss: 0.200751> <nby loss: 0.280504>
+[Epoch 0/9, Batch 1/468] <Total loss: 0.529577> <cls loss: 0.082347> <x loss: 0.113045> <y loss: 0.083137> <nbx loss: 0.159639> <nby loss: 0.091410>
+[Epoch 0/9, Batch 2/468] <Total loss: 0.764886> <cls loss: 0.094967> <x loss: 0.139947> <y loss: 0.142193> <nbx loss: 0.189724> <nby loss: 0.198055>
+[Epoch 0/9, Batch 3/468] <Total loss: 0.607258> <cls loss: 0.081174> <x loss: 0.108801> <y loss: 0.125346> <nbx loss: 0.134875> <nby loss: 0.157063>
+```
+
+### Dataset Format
+The `annotation_path` parameter is denotes the path to a custom annotation file, the format must be:
+```shell
+"img0_path x0 y0 x1 y1 ... xn-1,yn-1"
+"img1_path x0 y0 x1 y1 ... xn-1,yn-1"
+"img2_path x0 y0 x1 y1 ... xn-1,yn-1"
+"img3_path x0 y0 x1 y1 ... xn-1,yn-1"
+...
+```
+If the label in annotation_path is already normalized by image size, please set `coordinates_already_normalized` as `True` in `apply_training` API.
+```shell
+"img0_path x0/w y0/h x1/w y1/h ... xn-1/w,yn-1/h"
+"img1_path x0/w y0/h x1/w y1/h ... xn-1/w,yn-1/h"
+"img2_path x0/w y0/h x1/w y1/h ... xn-1/w,yn-1/h"
+"img3_path x0/w y0/h x1/w y1/h ... xn-1/w,yn-1/h"
+...
+```
+Here is a example of [WFLW](torchlm/data/_converters.py) to show you how to prepare the dataset, also see [test/data.py](test/data.py).
+
 <details>
 <summary> How to train PIPNet in your own dataset and custom meanface settings?  </summary>
 
-* setup your custom meanface and nearest-neighbor landmarks through `set_custom_meanface` method, this method will calculate the distance between landmarks in meanface and auto setup the nearest-neighbors for each landmarks.
+Setting up your custom meanface and nearest-neighbor landmarks through `set_custom_meanface` method, this method will calculate the distance between landmarks in meanface and auto setup the nearest-neighbors for each landmark. NOTE: The PIPNet will reshape the detection headers if the number of landmarks in custom dataset is not equal with the `num_lms` you initialized.
 
 ```python
-def set_custom_meanface(
-        self,
-        custom_meanface_file_or_string: str
-) -> bool:
+def set_custom_meanface(custom_meanface_file_or_string: str) -> bool:
     """
     :param custom_meanface_file_or_string: a long string or a file contains normalized
     or un-normalized meanface coords, the format is "x0,y0,x1,y1,x2,y2,...,xn-1,yn-1".
     :return: status, True if successful.
     """
 ```
-
+Also, a `generate_meanface` API is available in torchlm to help you get meanface in your custom dataset.
+```python
+# generate your custom meanface.
+custom_meanface, custom_meanface_string = torchlm.data.annotools.generate_meanface(
+  annotation_path="../data/WFLW/convertd/train.txt")
+# check your generated meanface.
+rendered_meanface = torchlm.data.annotools.draw_meanface(meanface=custom_meanface)
+cv2.imwrite("./logs/wflw_meanface.jpg", rendered_meanface)
+# setting up your custom meanface
+model.set_custom_meanface(custom_meanface_file_or_string=custom_meanface_string)
+```
+<div align='center'>
+  <img src='test/assets/wflw_meanface.jpg' height="260px" width="260px">
+</div>  
 
 </details>
 
-Please jump to the entry point of the function for the detail documentations of **training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L166](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). 
-
-
-### 👀👇 Inference
-#### C++ API
+## 👀👇 Inference
+### C++ API
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
-#### Python API
+### Python API
 In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
 ```python
 import torchlm
@@ -261,7 +314,7 @@ torchlm.runtime.bind(
   pipnet(backbone="resnet18", pretrained=True,  
          num_nb=10, num_lms=98, net_stride=32, input_size=256,
          meanface_type="wflw", map_location="cpu", checkpoint=None)
-) # will auto download from latest release if pretrained=True
+) # will auto download pretrained weights from latest release if pretrained=True
 landmarks, bboxes = torchlm.runtime.forward(image)
 image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
 image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
@@ -282,4 +335,5 @@ The code of **torchlm** is released under the MIT License.
 Please consider ⭐ this repo if you like it, as it is the simplest way to support me.
 
 ## 👋 Acknowledgement  
-The implementation of torchlm's transforms borrow the code from [Paperspace](https://github.com/Paperspace/DataAugmentationForObjectDetection/blob/master/data_aug/bbox_util.py) .  
+* The implementation of torchlm's transforms borrow the code from [Paperspace](https://github.com/Paperspace/DataAugmentationForObjectDetection/blob/master/data_aug/bbox_util.py).    
+* **PIPNet**: [Towards Efficient Facial Landmark Detection in the Wild, CVPR2021](https://github.com/jhb86253817/PIPNet)

@@ -8,21 +8,25 @@ class LandmarksTrainableBase(LandmarksDetBase):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def loss(self, *args, **kwargs) -> Any:
+    def apply_losses(self, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     @abstractmethod
-    def detect(self, *args, **kwargs) -> Any:
+    def apply_detecting(self, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     @abstractmethod
-    def training(self, *args, **kwargs) -> Any:
+    def apply_training(self, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     @abstractmethod
-    def evaluating(self, *args, **kwargs) -> Any:
+    def apply_evaluating(self, *args, **kwargs) -> Any:
         raise NotImplementedError
 
     @abstractmethod
-    def export(self, *args, **kwargs) -> Any:
+    def apply_exporting(self, *args, **kwargs) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
+    def apply_freezing(self, *args, **kwargs) -> Any:
         raise NotImplementedError
