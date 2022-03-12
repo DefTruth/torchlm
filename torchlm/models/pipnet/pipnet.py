@@ -337,10 +337,7 @@ class PIPNetMobileNetV2(_PIPNetImpl):
             heads: Optional[bool] = False
     ):
         if backbone:
-            freeze_module(self.layer1)
-            freeze_module(self.layer2)
-            freeze_module(self.layer3)
-            freeze_module(self.layer4)
+            freeze_module(self.features)
         if heads:
             freeze_module(self.cls_layer)
             freeze_module(self.x_layer)

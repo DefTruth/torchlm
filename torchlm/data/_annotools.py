@@ -4,6 +4,7 @@ import numpy as np
 from typing import Tuple, List
 from ..utils import draw_landmarks
 
+
 def fetch_annotations(annotation_path: str) -> List[str]:
     """fetch annotation strings from a specific file, this file should formatted as:
        "img0_path x0 y0 x1 y1 ... xn-1,yn-1"
@@ -49,6 +50,7 @@ def decode_annotation(annotation_string: str) -> Tuple[str, np.ndarray]:
     lms_gt = np.array(lms_gt).reshape((-1, 2))
     return img_path, lms_gt
 
+
 def generate_meanface(
         annotation_path: str,
 ) -> Tuple[np.ndarray, str]:
@@ -56,7 +58,8 @@ def generate_meanface(
     landmarks = []
     for annotation_string in tqdm.tqdm(
             annotations_info,
-            desc=f"generating meanface from: {annotation_path}"
+            desc=f"Generating meanface [{annotation_path}]",
+            colour="green"
     ):
         _, lms_gt = decode_annotation(
             annotation_string=annotation_string)  # (n,2)
@@ -69,14 +72,18 @@ def generate_meanface(
 
     return meanface, meanface_string
 
+
 def draw_meanface(meanface: np.ndarray) -> np.ndarray:
     # noinspection PyTypeChecker, PyArgumentList
     if meanface.max() <= 1.:
         meanface *= 256
-    w = int(np.max(meanface[:, 0]).item() + 1)
-    h = int(np.max(meanface[:, 1]).item() + 1)
+    x1 = np.min(meanface[:, 0]).item()
+    y1 = np.min(meanface[:, 1]).item()
+    x2 = np.max(meanface[:, 0]).item()
+    y2 = np.max(meanface[:, 1]).item()
+    w = int(x2 - x1 + 10)
+    h = int(y2 - y1 + 10)
+    meanface[:, 0] -= (x1 - 5)
+    meanface[:, 1] -= (y1 - 5)
     canvas = np.zeros((h, w, 3), dtype=np.uint8)
     return draw_landmarks(canvas, landmarks=meanface)
-
-
-

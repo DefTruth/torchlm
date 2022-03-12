@@ -544,7 +544,11 @@ def _evaluating_impl(
 
     nmes = []
     # evaluating
-    for image, lms_gt in tqdm.tqdm(eval_dataset, colour="green"):
+    for image, lms_gt in tqdm.tqdm(
+            eval_dataset,
+            colour="green",
+            desc="Evaluating PIPNet"
+    ):
         lms_pred = net.detect(image=image)  # (n,2)
         if norm_indices is not None:
             norm = np.linalg.norm(lms_gt[norm_indices[0]] - lms_gt[norm_indices[1]])
@@ -599,4 +603,3 @@ def _exporting_impl(
 
         except Exception as e:
             print(f"{onnx_path}:+ simplifier failure: {e}")
-
