@@ -62,7 +62,7 @@
 |PIPNet|ResNet101|Heatmap+Regression+NRM|3.19|3.08|1.42|4.31| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
 
 
-## Installation
+## 🛠️Installation
 you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). 
 ```shell
 pip3 install torchlm
@@ -284,18 +284,25 @@ def set_custom_meanface(custom_meanface_file_or_string: str) -> bool:
 ```
 Also, a `generate_meanface` API is available in torchlm to help you get meanface in your custom dataset.
 ```python
-# generate your custom meanface
+# generate your custom meanface.
 custom_meanface, custom_meanface_string = torchlm.data.annotools.generate_meanface(
-    annotation_path="../data/WFLW/convertd/train.txt")
+  annotation_path="../data/WFLW/convertd/train.txt")
+# check your generated meanface.
+rendered_meanface = torchlm.data.annotools.draw_meanface(meanface=custom_meanface)
+cv2.imwrite("./logs/wflw_meanface.jpg", rendered_meanface)
 # setting up your custom meanface
 model.set_custom_meanface(custom_meanface_file_or_string=custom_meanface_string)
 ```
+<div align='center'>
+  <img src='test/assets/wflw_meanface.jpg' height="260px" width="260px">
+</div>  
+
 </details>
 
-### 👀👇 Inference
-#### C++ API
+## 👀👇 Inference
+### C++ API
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
-#### Python API
+### Python API
 In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
 ```python
 import torchlm

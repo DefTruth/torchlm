@@ -46,6 +46,15 @@ def test_pipnet_training():
         map_location="cpu",
         checkpoint=None
     )
+    # # generate your custom meanface
+    # custom_meanface, custom_meanface_string = \
+    #     torchlm.data.annotools.generate_meanface(
+    #         annotation_path="../data/WFLW/convertd/train.txt"
+    #     )
+    # # setting up your custom meanface
+    # model.set_custom_meanface(
+    #     custom_meanface_file_or_string=custom_meanface_string
+    # )
 
     model.apply_freezing(backbone=True)
 
@@ -61,15 +70,6 @@ def test_pipnet_training():
         num_workers=4,
         shuffle=True
     )
-    # generate your custom meanface
-    custom_meanface, custom_meanface_string = \
-        torchlm.data.annotools.generate_meanface(
-            annotation_path="../data/WFLW/convertd/train.txt"
-        )
-    # setting up your custom meanface
-    model.set_custom_meanface(
-        custom_meanface_file_or_string=custom_meanface_string
-    )
 
 
 def test_pipnet_evaluating():
@@ -80,8 +80,20 @@ def test_pipnet_exporting():
     pass
 
 
+def test_pipnet_meanface():
+    # generate your custom meanface
+    custom_meanface, custom_meanface_string = \
+        torchlm.data.annotools.generate_meanface(
+            annotation_path="../data/WFLW/convertd/train.txt"
+        )
+    canvas = torchlm.data.annotools.draw_meanface(
+        meanface=custom_meanface)
+    cv2.imwrite("./logs/wflw_meanface.jpg", canvas)
+
+
 if __name__ == "__main__":
     # test_pipnet_runtime()
-    test_pipnet_training()
+    # test_pipnet_training()
     # test_pipnet_evaluating()
     # test_pipnet_exporting()
+    test_pipnet_meanface()
