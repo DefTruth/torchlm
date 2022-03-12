@@ -63,18 +63,8 @@
 
 ## 🛠️ Usage
 
-### Requirements
-* opencv-python>=4.3.0
-* numpy>=1.14.4
-* torch>=1.6.0
-* torchvision>=0.8.0
-* albumentations>=1.1.0 (optional)
-* onnx>=1.8.0
-* onnxruntime>=1.7.0
-* tqdm>=4.10.0
-
 ### Installation
-you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). See [NOTE](#torchlm-NOTE) before installation!!!
+you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). 
 ```shell
 pip3 install torchlm
 # install from specific pypi mirrors use '-i'
@@ -125,7 +115,7 @@ transform = torchlm.build_default_transform(
     force_norm_before_mean_std=True,  # img/=255. first
     rotate=30,
     keep_aspect=False,
-    to_tensor=False  # array -> Tensor & HWC -> CHW
+    to_tensor=True  # array -> Tensor & HWC -> CHW
 )
 ```
 See [transforms.md](docs/api/transforms.md) for supported transforms sets and more example can be found at [test/transforms.py](test/transforms.py).
@@ -221,37 +211,15 @@ In **torchlm**, each model have a high level and user-friendly API named `traini
 ```python
 from torchlm.models import pipnet
 
-model = pipnet(
-        backbone="resnet18",
-        pretrained=False,
-        num_nb=10,
-        num_lms=98,
-        net_stride=32,
-        input_size=256,
-        meanface_type="wflw",
-        backbone_pretrained=True,
-        map_location="cuda",
-        checkpoint=None
-)
+model = pipnet(backbone="resnet18", pretrained=False, num_nb=10, num_lms=98, net_stride=32,
+               input_size=256, meanface_type="wflw", backbone_pretrained=True)
 
 model.training(
-        self,
         annotation_path: str,
         criterion_cls: nn.Module = nn.MSELoss(),
         criterion_reg: nn.Module = nn.L1Loss(),
         learning_rate: float = 0.0001,
-        cls_loss_weight: float = 10.,
-        reg_loss_weight: float = 1.,
-        num_nb: int = 10,
-        num_epochs: int = 60,
-        save_dir: Optional[str] = "./save",
-        save_interval: Optional[int] = 10,
-        save_prefix: Optional[str] = "",
-        decay_steps: Optional[List[int]] = (30, 50),
-        decay_gamma: Optional[float] = 0.1,
-        device: Optional[Union[str, torch.device]] = "cuda",
-        transform: Optional[transforms.LandmarksCompose] = None,
-        coordinates_already_normalized: Optional[bool] = False,
+        # ...
         **kwargs: Any  # params for DataLoader
 ) -> nn.Module:
 ```  
@@ -284,39 +252,24 @@ The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be
 #### Python API
 In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
 ```python
-import cv2
 import torchlm
 from torchlm.tools import faceboxesv2
 from torchlm.models import pipnet
 
-img_path = "./1.jpg"
-save_path = "./1.jpg"
-image = cv2.imread(img_path)
-
 torchlm.runtime.bind(faceboxesv2())
 torchlm.runtime.bind(
-  pipnet(
-    backbone="resnet18",
-    pretrained=True,  # will auto download from latest release.
-    num_nb=10,
-    num_lms=98,
-    net_stride=32,
-    input_size=256,
-    meanface_type="wflw",
-    map_location="cpu",
-    checkpoint=None
-    )
-)
+  pipnet(backbone="resnet18", pretrained=True,  
+         num_nb=10, num_lms=98, net_stride=32, input_size=256,
+         meanface_type="wflw", map_location="cpu", checkpoint=None)
+) # will auto download from latest release if pretrained=True
 landmarks, bboxes = torchlm.runtime.forward(image)
 image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
 image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
-cv2.imwrite(save_path, image)    
 ```
 <div align='center'>
-  <img src='docs/assets/pipnet0.jpg' height="180px" width="180px">
-  <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="180px" width="180px">
-  <img src='docs/assets/pipnet_shaolin_soccer.gif' height="180px" width="180px">
-  <img src='docs/assets/pipnet_WFLW_model.gif' height="180px" width="180px">
+  <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="260px" width="260px">
+  <img src='docs/assets/pipnet_shaolin_soccer.gif' height="260px" width="260px">
+  <img src='docs/assets/pipnet_WFLW_model.gif' height="260px" width="260px">
 </div>  
 
 ## 📖 Documentations
