@@ -138,13 +138,13 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
 
                     self.meanface_status = True
 
-    def loss(self, *args, **kwargs) -> _PIPNet_Loss_Output_Type:
-        return _loss_impl(*args, **kwargs)
+    def apply_losses(self, *args, **kwargs) -> _PIPNet_Loss_Output_Type:
+        return _losses_impl(*args, **kwargs)
 
-    def detect(self, image: np.ndarray) -> np.ndarray:
-        return _detect_impl(net=self, image=image)
+    def apply_detecting(self, image: np.ndarray) -> np.ndarray:
+        return _detecting_impl(net=self, image=image)
 
-    def training(
+    def apply_training(
             self,
             annotation_path: str,
             criterion_cls: nn.Module = nn.MSELoss(),
@@ -152,12 +152,12 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
             learning_rate: float = 0.0001,
             cls_loss_weight: float = 10.,
             reg_loss_weight: float = 1.,
-            num_nb: int = 10,
             num_epochs: int = 60,
             save_dir: Optional[str] = "./save",
             save_interval: Optional[int] = 10,
             save_prefix: Optional[str] = "",
             decay_steps: Optional[List[int]] = (30, 50),
+            logging_interval: Optional[int] = 1,
             decay_gamma: Optional[float] = 0.1,
             device: Optional[Union[str, torch.device]] = "cuda",
             transform: Optional[transforms.LandmarksCompose] = None,
@@ -176,7 +176,6 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
         :param learning_rate: learning rate, default 0.0001
         :param cls_loss_weight: weight for heatmap classification
         :param reg_loss_weight: weight for offsets regression
-        :param num_nb: the number of Nearest-neighbor landmarks for NRM, default 10
         :param num_epochs: the number of training epochs
         :param save_dir: the dir to save checkpoints
         :param save_interval: the interval to save checkpoints
@@ -185,12 +184,14 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
         :param decay_steps: decay steps for learning rate scheduler
         :param decay_gamma: decay gamma for learning rate scheduler
         :param device: training device, default cuda.
+        :param logging_interval: iter interval for logging.
         :param transform: user specific transform. If None, torchlm will build a default transform,
          more details can be found at `torchlm.transforms.build_default_transform`
         :param coordinates_already_normalized: denoted the label in annotation_path is normalized(by image size) of not
         :param kwargs:  params for DataLoader
         :return: A trained model.
         """
+        print("Parameters for DataLoader: ", kwargs)
         device = device if torch.cuda.is_available() else "cpu"
         # prepare dataset
         default_dataset = _PIPTrainDataset(
@@ -212,17 +213,18 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
             learning_rate=learning_rate,
             cls_loss_weight=cls_loss_weight,
             reg_loss_weight=reg_loss_weight,
-            num_nb=num_nb,
+            num_nb=self.num_nb,
             num_epochs=num_epochs,
             save_dir=save_dir,
             save_prefix=save_prefix,
             save_interval=save_interval,
             decay_steps=decay_steps,
             decay_gamma=decay_gamma,
-            device=device
+            device=device,
+            logging_interval=logging_interval
         )
 
-    def evaluating(
+    def apply_evaluating(
             self,
             annotation_path: str,
             norm_indices: List[int] = (60, 72),
@@ -242,14 +244,14 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
             dataset_type=dataset_type
         )
 
-    def export(
+    def apply_exporting(
             self,
             onnx_path: str = "./onnx/pipnet.onnx",
             opset: int = 12,
             simplify: bool = False,
             output_names: Optional[List[str]] = None
     ) -> None:
-        _export_impl(
+        _exporting_impl(
             net=self,
             onnx_path=onnx_path,
             opset=opset,
@@ -257,12 +259,15 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
             output_names=output_names
         )
 
+    def apply_freezing(self, *args, **kwargs) -> Any:
+        raise NotImplementedError
+
     def forward(self, *args, **kwargs) -> _PIPNet_Output_Type:
         raise NotImplementedError
 
 
 @torch.no_grad()
-def _detect_impl(
+def _detecting_impl(
         net: _PIPNetImpl,
         image: np.ndarray
 ) -> np.ndarray:
@@ -333,7 +338,7 @@ def _detect_impl(
     return lms_pred_merge
 
 
-def _loss_impl(
+def _losses_impl(
         outputs_cls: Tensor,
         outputs_x: Tensor,
         outputs_y: Tensor,
@@ -412,6 +417,7 @@ def _training_impl(
         save_dir: Optional[str] = "./save",
         save_prefix: Optional[str] = "",
         save_interval: Optional[int] = 10,
+        logging_interval: Optional[int] = 1,
         decay_steps: Optional[List[int]] = (30, 50),
         decay_gamma: Optional[float] = 0.1,
         device: Optional[Union[str, torch.device]] = "cuda"
@@ -425,6 +431,7 @@ def _training_impl(
             f"running PIPNet ..."
         )
 
+    net = net.to(device)
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
     scheduler = optim.lr_scheduler.MultiStepLR(
         optimizer=optimizer,
@@ -453,7 +460,7 @@ def _training_impl(
             labels_nb_x = labels_nb_x.to(device)
             labels_nb_y = labels_nb_y.to(device)
             outputs_cls, outputs_x, outputs_y, outputs_nb_x, outputs_nb_y = net(inputs)
-            loss_cls, loss_x, loss_y, loss_nb_x, loss_nb_y = net.loss(
+            loss_cls, loss_x, loss_y, loss_nb_x, loss_nb_y = net.apply_losses(
                 outputs_cls=outputs_cls,
                 outputs_x=outputs_x,
                 outputs_y=outputs_y,
@@ -476,7 +483,7 @@ def _training_impl(
             loss.backward()
             optimizer.step()
 
-            if i % 10 == 0:
+            if i % logging_interval == 0:
                 print(
                     '[Epoch {:d}/{:d}, Batch {:d}/{:d}] <Total loss: {:.6f}> <cls loss: {:.6f}> '
                     '<x loss: {:.6f}> <y loss: {:.6f}> <nbx loss: {:.6f}> <nby loss: {:.6f}>'
@@ -551,7 +558,7 @@ def _evaluating_impl(
     return nme, fr, auc
 
 
-def _export_impl(
+def _exporting_impl(
         net: _PIPNetImpl,
         onnx_path: str = "./onnx/pipnet.onnx",
         opset: int = 12,
@@ -592,3 +599,4 @@ def _export_impl(
 
         except Exception as e:
             print(f"{onnx_path}:+ simplifier failure: {e}")
+

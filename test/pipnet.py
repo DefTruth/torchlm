@@ -34,17 +34,54 @@ def test_pipnet_runtime():
 
 
 def test_pipnet_training():
-    pass
+    model = pipnet(
+        backbone="resnet18",
+        pretrained=True,
+        num_nb=10,
+        num_lms=98,
+        net_stride=32,
+        input_size=256,
+        meanface_type="wflw",
+        backbone_pretrained=True,
+        map_location="cpu",
+        checkpoint=None
+    )
+
+    model.apply_freezing(backbone=True)
+
+    model.apply_training(
+        annotation_path="../data/WFLW/convertd/train.txt",
+        num_epochs=10,
+        learning_rate=0.0001,
+        save_dir="./save/pipnet",
+        save_prefix="pipnet-wflw-resnet18",
+        save_interval=1,
+        device="cpu",
+        batch_size=16,
+        num_workers=4,
+        shuffle=True
+    )
+    # generate your custom meanface
+    custom_meanface, custom_meanface_string = \
+        torchlm.data.annotools.generate_meanface(
+            annotation_path="../data/WFLW/convertd/train.txt"
+        )
+    # setting up your custom meanface
+    model.set_custom_meanface(
+        custom_meanface_file_or_string=custom_meanface_string
+    )
+
 
 def test_pipnet_evaluating():
     pass
 
-def test_pipnet_export():
+
+def test_pipnet_exporting():
     pass
 
 
 if __name__ == "__main__":
-    test_pipnet_runtime()
+    # test_pipnet_runtime()
     test_pipnet_training()
-    test_pipnet_evaluating()
-    test_pipnet_runtime()
+    # test_pipnet_evaluating()
+    # test_pipnet_exporting()

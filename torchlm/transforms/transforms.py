@@ -24,10 +24,10 @@ _Have_Albumentations = False
 
 try:
     import albumentations
+
     _Have_Albumentations = True
 except:
     _Have_Albumentations = False
-
 
 __all__ = [
     "LandmarksCompose",
@@ -81,9 +81,11 @@ def set_transforms_debug(debug: bool = False):
     global TransformDebugMode
     TransformDebugMode = debug
 
+
 def albumentations_is_available() -> bool:
     global _Have_Albumentations
     return _Have_Albumentations
+
 
 def _transforms_api_logging(info: str):
     global TransformLoggingMode
@@ -332,7 +334,6 @@ class BindAlbumentationsTransform(LandmarksTransform):
         )
 
     except ImportError as e:
-        warnings.warn(f"Can not found albumentations!: {e}")
         _Have_Albumentations = False
     except Exception as e1:
         _Have_Albumentations = False
@@ -2163,7 +2164,6 @@ def build_default_transform(
             LandmarksRandomBackgroundMixUp(prob=0.25),
             LandmarksRandomScale(prob=0.25),
             LandmarksRandomTranslate(prob=0.25),
-            LandmarksRandomShear(prob=0.25),
             LandmarksRandomBlur(kernel_range=(5, 25), prob=0.25),
             LandmarksRandomBrightness(prob=0.25),
             LandmarksRandomRotate(rotate, prob=0.25, bins=8),
@@ -2178,7 +2178,6 @@ def build_default_transform(
         LandmarksRandomBackgroundMixUp(prob=0.25),
         LandmarksRandomScale(prob=0.25),
         LandmarksRandomTranslate(prob=0.25),
-        LandmarksRandomShear(prob=0.25),
         LandmarksRandomBlur(kernel_range=(5, 25), prob=0.25),
         LandmarksRandomBrightness(prob=0.25),
         LandmarksRandomRotate(rotate, prob=0.25, bins=8),

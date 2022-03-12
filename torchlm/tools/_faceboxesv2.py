@@ -288,7 +288,7 @@ class FaceBoxesV2(FaceDetBase):
         self.net.eval()
 
     @torch.no_grad()
-    def detect(
+    def apply_detecting(
             self,
             image: np.ndarray,  # BGR
             thresh: float = 0.6,

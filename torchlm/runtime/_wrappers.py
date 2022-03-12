@@ -45,9 +45,9 @@ class RuntimeWrapper(object):
         height, width, _ = image.shape
         if swapRB_before_face:
             image_swapRB = image[:, :, ::-1].copy()
-            bboxes = cls.face_base.detect(image_swapRB, **kwargs)  # (n,5) x1,y1,x2,y2,score
+            bboxes = cls.face_base.apply_detecting(image_swapRB, **kwargs)  # (n,5) x1,y1,x2,y2,score
         else:
-            bboxes = cls.face_base.detect(image, **kwargs)  # (n,5) x1,y1,x2,y2,score
+            bboxes = cls.face_base.apply_detecting(image, **kwargs)  # (n,5) x1,y1,x2,y2,score
 
         det_num = bboxes.shape[0]
         landmarks = []
@@ -73,7 +73,7 @@ class RuntimeWrapper(object):
                 crop = image[y1:y2, x1:x2, :][:, :, ::-1]  # e.g RGB
             else:
                 crop = image[y1:y2, x1:x2, :]  # e.g BGR
-            lms_pred = cls.landmarks_base.detect(crop, **kwargs)  # (m,2)
+            lms_pred = cls.landmarks_base.apply_detecting(crop, **kwargs)  # (m,2)
             lms_pred[:, 0] += x1
             lms_pred[:, 1] += y1
             landmarks.append(lms_pred)

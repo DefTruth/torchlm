@@ -54,21 +54,43 @@ class _PIPTrainDataset(Dataset):
         self.num_nb = len(meanface_indices[0])
         self.annotations_info = \
             annotools.fetch_annotations(annotation_path=self.annotation_path)
+        print(f"Built _PIPTrainDataset: train count is {len(self)} !")
+
+    def _apply_transform(
+            self,
+            img: np.ndarray,
+            label: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
+
+        if self.coordinates_already_normalized:
+            h, w, _ = img.shape
+            label[:, 0] *= w
+            label[:, 1] *= h
+            # online data augmentations, must be before normalize
+            img, label = self.transform(img, label)
+            # converted to Tensor manually
+            if isinstance(label, Tensor):
+                label = label.cpu().numpy()
+            # re-normalize
+            label[:, 0] /= w
+            label[:, 1] /= h
+        else:
+            # online data augmentations, must be before normalize
+            img, label = self.transform(img, label)
+            # converted to Tensor manually
+            if isinstance(label, Tensor):
+                label = label.cpu().numpy()
+            h, w, _ = img.shape
+            label[:, 0] /= w
+            label[:, 1] /= h
+
+        return img, label
 
     def __getitem__(self, index: int) -> _PIPTrainDataset_Output_Type:
         annotation_string = self.annotations_info[index]
         img_path, label = annotools.decode_annotation(annotation_string=annotation_string)
         img = cv2.imread(img_path)[:, :, ::-1]  # BGR -> RGB
-        if not self.coordinates_already_normalized:
-            h, w, _ = img.shape
-            label[:, 0] /= w
-            label[:, 1] /= h
-
-        # online data augmentations
-        img, label = self.transform(img, label)
-        # converted to Tensor manually
-        if isinstance(label, Tensor):
-            label = label.cpu().numpy()
+        img, label = self._apply_transform(img, label)
 
         grid_size = int(self.input_size / self.net_stride)
         label_cls = np.zeros((self.num_lms, grid_size, grid_size))
@@ -89,11 +111,12 @@ class _PIPTrainDataset(Dataset):
         if not isinstance(img, Tensor):
             img, label = self.to_tensor(img, label)  # HWC -> CHW
 
-        label_cls = torch.from_numpy(label_cls)
-        label_x = torch.from_numpy(label_x)
-        label_y = torch.from_numpy(label_y)
-        label_nb_x = torch.from_numpy(label_nb_x)
-        label_nb_y = torch.from_numpy(label_nb_y)
+        img = img.float()
+        label_cls = torch.from_numpy(label_cls).float()
+        label_x = torch.from_numpy(label_x).float()
+        label_y = torch.from_numpy(label_y).float()
+        label_nb_x = torch.from_numpy(label_nb_x).float()
+        label_nb_y = torch.from_numpy(label_nb_y).float()
 
         return img, label_cls, label_x, label_y, label_nb_x, label_nb_y
 
@@ -113,6 +136,7 @@ class _PIPEvalDataset(object):
         self.coordinates_already_normalized = coordinates_already_normalized
         self.annotations_info = \
             annotools.fetch_annotations(annotation_path=self.annotation_path)
+        print(f"Built _PIPEvalDataset: eval count is {len(self)} !")
 
     def __getitem__(self, index: int) -> Tuple[np.ndarray, np.ndarray]:  # img, lms_gt
         annotation_string = self.annotations_info[index]
