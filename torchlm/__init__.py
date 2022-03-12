@@ -1,5 +1,5 @@
 # Versions
-__version__ = '0.1.6.1'
+__version__ = '0.1.6.2'
 # Transforms Module: 100+ transforms available, can bind torchvision and
 # albumentations into torchlm pipeline with autodtype wrapper.
 from .transforms import *

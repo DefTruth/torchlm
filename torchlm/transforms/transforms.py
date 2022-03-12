@@ -1,12 +1,11 @@
 import os
-
 import cv2
 import math
 import torch
 import random
+import warnings
 import numpy as np
 import torchvision
-import albumentations
 from torch import Tensor
 from pathlib import Path
 from abc import ABCMeta, abstractmethod
@@ -20,6 +19,15 @@ from ._autodtypes import (
     autodtype,
     set_autodtype_logging
 )
+
+_Have_Albumentations = False
+
+try:
+    import albumentations
+    _Have_Albumentations = True
+except:
+    _Have_Albumentations = False
+
 
 __all__ = [
     "LandmarksCompose",
@@ -56,6 +64,7 @@ __all__ = [
     "set_transforms_logging",
     "set_transforms_debug",
     "set_autodtype_logging",
+    "albumentations_is_available",
     "build_default_transform"
 ]
 
@@ -72,6 +81,9 @@ def set_transforms_debug(debug: bool = False):
     global TransformDebugMode
     TransformDebugMode = debug
 
+def albumentations_is_available() -> bool:
+    global _Have_Albumentations
+    return _Have_Albumentations
 
 def _transforms_api_logging(info: str):
     global TransformLoggingMode
@@ -223,90 +235,111 @@ class BindTorchVisionTransform(LandmarksTransform):
                + '())'
 
 
-Albumentations_Transform_Type = Union[
-    albumentations.ImageOnlyTransform,
-    albumentations.DualTransform
-]
+try:
+    import albumentations
+
+    Albumentations_Transform_Hook_Type = Union[
+        albumentations.ImageOnlyTransform,
+        albumentations.DualTransform
+    ]
+    _Have_Albumentations = True
+except Exception:
+    Albumentations_Transform_Hook_Type = Any
+    _Have_Albumentations = False
 
 
+# TODO: 移除对于albumentations的硬依赖
 class BindAlbumentationsTransform(LandmarksTransform):
     # albumentations >= v 1.1.0
-    _Supported_Image_Only_Transform_Set: Tuple = (
-        albumentations.Blur,
-        albumentations.CLAHE,
-        albumentations.ChannelDropout,
-        albumentations.ChannelShuffle,
-        albumentations.ColorJitter,
-        albumentations.Downscale,
-        albumentations.Emboss,
-        albumentations.Equalize,
-        albumentations.FDA,
-        albumentations.FancyPCA,
-        albumentations.FromFloat,
-        albumentations.GaussNoise,
-        albumentations.GaussianBlur,
-        albumentations.GlassBlur,
-        albumentations.HistogramMatching,
-        albumentations.HueSaturationValue,
-        albumentations.ISONoise,
-        albumentations.ImageCompression,
-        albumentations.InvertImg,
-        albumentations.MedianBlur,
-        albumentations.MotionBlur,
-        albumentations.Normalize,
-        albumentations.PixelDistributionAdaptation,
-        albumentations.Posterize,
-        albumentations.RGBShift,
-        albumentations.RandomBrightnessContrast,
-        albumentations.RandomFog,
-        albumentations.RandomGamma,
-        albumentations.RandomRain,
-        albumentations.RandomShadow,
-        albumentations.RandomSnow,
-        albumentations.RandomSunFlare,
-        albumentations.RandomToneCurve,
-        albumentations.Sharpen,
-        albumentations.Solarize,
-        albumentations.Superpixels,
-        albumentations.TemplateTransform,
-        albumentations.ToFloat,
-        albumentations.ToGray
-    )
+    global _Have_Albumentations
 
-    _Supported_Dual_Transform_Set: Tuple = (
-        albumentations.Affine,
-        albumentations.CenterCrop,
-        albumentations.CoarseDropout,
-        albumentations.Crop,
-        albumentations.CropAndPad,
-        albumentations.CropNonEmptyMaskIfExists,
-        albumentations.Flip,
-        albumentations.HorizontalFlip,
-        albumentations.Lambda,
-        albumentations.LongestMaxSize,
-        albumentations.NoOp,
-        albumentations.PadIfNeeded,
-        albumentations.Perspective,
-        albumentations.PiecewiseAffine,
-        albumentations.RandomCrop,
-        albumentations.RandomCropNearBBox,
-        albumentations.RandomGridShuffle,
-        albumentations.RandomResizedCrop,
-        albumentations.RandomRotate90,
-        albumentations.RandomScale,
-        albumentations.RandomSizedCrop,
-        albumentations.Resize,
-        albumentations.Rotate,
-        albumentations.SafeRotate,
-        albumentations.ShiftScaleRotate,
-        albumentations.SmallestMaxSize,
-        albumentations.Transpose,
-        albumentations.VerticalFlip
-    )
+    try:
+        import albumentations
+
+        _Have_Albumentations = True
+
+        _Supported_Image_Only_Transform_Set: Tuple = (
+            albumentations.Blur,
+            albumentations.CLAHE,
+            albumentations.ChannelDropout,
+            albumentations.ChannelShuffle,
+            albumentations.ColorJitter,
+            albumentations.Downscale,
+            albumentations.Emboss,
+            albumentations.Equalize,
+            albumentations.FDA,
+            albumentations.FancyPCA,
+            albumentations.FromFloat,
+            albumentations.GaussNoise,
+            albumentations.GaussianBlur,
+            albumentations.GlassBlur,
+            albumentations.HistogramMatching,
+            albumentations.HueSaturationValue,
+            albumentations.ISONoise,
+            albumentations.ImageCompression,
+            albumentations.InvertImg,
+            albumentations.MedianBlur,
+            albumentations.MotionBlur,
+            albumentations.Normalize,
+            albumentations.PixelDistributionAdaptation,
+            albumentations.Posterize,
+            albumentations.RGBShift,
+            albumentations.RandomBrightnessContrast,
+            albumentations.RandomFog,
+            albumentations.RandomGamma,
+            albumentations.RandomRain,
+            albumentations.RandomShadow,
+            albumentations.RandomSnow,
+            albumentations.RandomSunFlare,
+            albumentations.RandomToneCurve,
+            albumentations.Sharpen,
+            albumentations.Solarize,
+            albumentations.Superpixels,
+            albumentations.TemplateTransform,
+            albumentations.ToFloat,
+            albumentations.ToGray
+        )
+
+        _Supported_Dual_Transform_Set: Tuple = (
+            albumentations.Affine,
+            albumentations.CenterCrop,
+            albumentations.CoarseDropout,
+            albumentations.Crop,
+            albumentations.CropAndPad,
+            albumentations.CropNonEmptyMaskIfExists,
+            albumentations.Flip,
+            albumentations.HorizontalFlip,
+            albumentations.Lambda,
+            albumentations.LongestMaxSize,
+            albumentations.NoOp,
+            albumentations.PadIfNeeded,
+            albumentations.Perspective,
+            albumentations.PiecewiseAffine,
+            albumentations.RandomCrop,
+            albumentations.RandomCropNearBBox,
+            albumentations.RandomGridShuffle,
+            albumentations.RandomResizedCrop,
+            albumentations.RandomRotate90,
+            albumentations.RandomScale,
+            albumentations.RandomSizedCrop,
+            albumentations.Resize,
+            albumentations.Rotate,
+            albumentations.SafeRotate,
+            albumentations.ShiftScaleRotate,
+            albumentations.SmallestMaxSize,
+            albumentations.Transpose,
+            albumentations.VerticalFlip
+        )
+
+    except ImportError as e:
+        warnings.warn(f"Can not found albumentations!: {e}")
+        _Have_Albumentations = False
+    except Exception as e1:
+        _Have_Albumentations = False
 
     def __init__(
             self,
-            transform: Albumentations_Transform_Type,
+            transform: Albumentations_Transform_Hook_Type,
             prob: float = 1.0
     ):
         super(BindAlbumentationsTransform, self).__init__()
@@ -323,13 +356,24 @@ class BindAlbumentationsTransform(LandmarksTransform):
             f"\n{self._Supported_Dual_Transform_Set}"
         self.prob = prob
         self.transform_internal = transform
-        self.compose_internal = albumentations.Compose(
-            transforms=[transform],
-            keypoint_params=albumentations.KeypointParams(
-                format="xy",
-                remove_invisible=True
-            )  # no label_fields now.
-        )
+        global _Have_Albumentations
+
+        try:
+            import albumentations
+            self.compose_internal = albumentations.Compose(
+                transforms=[transform],
+                keypoint_params=albumentations.KeypointParams(
+                    format="xy",
+                    remove_invisible=True
+                )  # no label_fields now.
+            )
+            _Have_Albumentations = True
+
+        except Exception:
+            self.compose_internal = None
+            _Have_Albumentations = False
+            warnings.warn(f"{self}: Can not found albumentations, "
+                          "ignore this binding!")
 
     @autodtype(AutoDtypeEnum.Array_InOut)
     def __call__(
@@ -354,6 +398,12 @@ class BindAlbumentationsTransform(LandmarksTransform):
             landmarks.ndim >= 2
         )), "Inputs must be np.ndarray and the ndim of " \
             "landmarks should >= 2!"
+
+        if not albumentations_is_available() or self.compose_internal is None:
+            _transforms_api_logging(f"{self}: Can not found albumentations,"
+                                    " skip this transform!")
+            self.flag = False
+            return img.astype(np.uint8), landmarks.astype(np.float32)
 
         keypoints = landmarks[:, :2].tolist()  # (x, y)
         kps_num = len(keypoints)
@@ -517,7 +567,7 @@ class BindTensorCallable(LandmarksTransform):
 
 Bind_Transform_Or_Callable_Input_Type = Union[
     TorchVision_Transform_Type,
-    Albumentations_Transform_Type,
+    Albumentations_Transform_Hook_Type,
     Callable_Array_Func_Type,
     Callable_Tensor_Func_Type
 ]
@@ -549,15 +599,22 @@ def bind(
     :param kwargs: extra args, such as prob(default 1.0) at bind level to force any transform
            or callable be a random-style.
     """
+    global _Have_Albumentations
+    try:
+        import albumentations
+        Albumentations_Transform_Hook_Type_ = (
+            albumentations.ImageOnlyTransform,
+            albumentations.DualTransform)
+        _Have_Albumentations = True
+    except:
+        Albumentations_Transform_Hook_Type_ = object
+        _Have_Albumentations = False
+
     if bind_type == BindEnum.Transform:
         # bind torchvision transform
         if isinstance(transform_or_callable, TorchVision_Transform_Type):
             return BindTorchVisionTransform(transform_or_callable, **kwargs)
-        elif isinstance(
-                transform_or_callable,
-                (albumentations.ImageOnlyTransform,
-                 albumentations.DualTransform)
-        ):
+        elif isinstance(transform_or_callable, Albumentations_Transform_Hook_Type_):
             # bind albumentations transform
             return BindAlbumentationsTransform(transform_or_callable, **kwargs)
         else:
@@ -1306,9 +1363,6 @@ class LandmarksRandomScale(LandmarksTransform):
 
         resize_scale_x = 1 + scale_x
         resize_scale_y = 1 + scale_y
-        print(resize_scale_x)
-        print(resize_scale_y)
-
         new_img = cv2.resize(img, None, fx=resize_scale_x, fy=resize_scale_y)
 
         new_landmarks[:, 0] *= resize_scale_x

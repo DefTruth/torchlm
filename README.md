@@ -33,7 +33,7 @@
 ## 👋 Core Features
 * High level pipeline for **training** and **inference**.
 * Provides **30+** native landmarks data augmentations.
-* Can **bind 80+** transforms from torchvision and albumentations with **one-line-code**.
+* Can **bind 80+** transforms from [torchvision](https://github.com/pytorch/vision) and [albumentations](https://github.com/albumentations-team/albumentations) with **one-line-code**.
 * Support awesome models for face landmarks detection, such as YOLOX, YOLOv5, ResNet, MobileNet, ShuffleNet and PIPNet, etc.
 
 ## 🆕 What's New
@@ -63,18 +63,8 @@
 
 ## 🛠️ Usage
 
-### Requirements
-* opencv-python-headless>=4.3.0
-* numpy>=1.14.4
-* torch>=1.6.0
-* torchvision>=0.8.0
-* albumentations>=1.1.0
-* onnx>=1.8.0
-* onnxruntime>=1.7.0
-* tqdm>=4.10.0
-
 ### Installation
-you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). See [NOTE](#torchlm-NOTE) before installation!!!
+you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). 
 ```shell
 pip3 install torchlm
 # install from specific pypi mirrors use '-i'
@@ -90,16 +80,6 @@ pip install -e .
 ```
 <div id="torchlm-NOTE"></div>  
 
-**NOTE**: If you have the conflict problem between different installed version of opencv (opencv-python and opencv-python-headless, `ablumentations` need opencv-python-headless). Please uninstall the opencv-python and opencv-python-headless first, and then reinstall torchlm. See [albumentations#1139](https://github.com/albumentations-team/albumentations/issues/1139) for more details.
-
-```shell
-# first uninstall confilct opencvs
-pip uninstall opencv-python
-pip uninstall opencv-python-headless
-pip uninstall torchlm  # if you have installed torchlm
-# then reinstall torchlm
-pip install torchlm # will also install deps, e.g opencv
-```
 
 ### 🌟🌟Data Augmentation
 **torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. 
@@ -135,21 +115,41 @@ transform = torchlm.build_default_transform(
     force_norm_before_mean_std=True,  # img/=255. first
     rotate=30,
     keep_aspect=False,
-    to_tensor=False  # array -> Tensor & HWC -> CHW
+    to_tensor=True  # array -> Tensor & HWC -> CHW
 )
 ```
+See [transforms.md](docs/api/transforms.md) for supported transforms sets and more example can be found at [test/transforms.py](test/transforms.py).
 
-* **bind** **80+** torchvision and albumentations's transforms through **torchlm.bind**
+<details>
+<summary> bind 80+ torchvision and albumentations's transforms </summary>  
+
+**NOTE**: Please install albumentations first if you want to bind albumentations's transforms. If you have the conflict problem between different installed version of opencv (opencv-python and opencv-python-headless, `ablumentations` need opencv-python-headless). Please uninstall the opencv-python and opencv-python-headless first, and then reinstall albumentations. See [albumentations#1140](https://github.com/albumentations-team/albumentations/issues/1140) for more details.
+
+```shell
+# first uninstall confilct opencvs
+pip uninstall opencv-python
+pip uninstall opencv-python-headless
+pip uninstall albumentations  # if you have installed albumentations
+# then reinstall torchlm
+pip install albumentations # will also install deps, e.g opencv
+```
+
+Then, check albumentations whether is available. 
+```python
+torchlm.albumentations_is_available()
+```
+
 ```python
 transform = torchlm.LandmarksCompose([
     torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),  
     torchlm.bind(albumentations.ColorJitter(p=0.5))
 ])
 ```
-See [transforms.md](docs/api/transforms.md) for supported transforms sets and more example can be found at [test/transforms.py](test/transforms.py).
+
+</details>
 
 <details>
-<summary> bind custom callable array or Tensor functions through torchlm.bind </summary>  
+<summary> bind custom callable array or Tensor transform functions </summary>  
 
 ```python
 # First, defined your custom functions
@@ -211,38 +211,16 @@ In **torchlm**, each model have a high level and user-friendly API named `traini
 ```python
 from torchlm.models import pipnet
 
-model = pipnet(
-        backbone="resnet18",
-        pretrained=False,
-        num_nb=10,
-        num_lms=98,
-        net_stride=32,
-        input_size=256,
-        meanface_type="wflw",
-        backbone_pretrained=True,
-        map_location="cuda",
-        checkpoint=None
-)
+model = pipnet(backbone="resnet18", pretrained=False, num_nb=10, num_lms=98, net_stride=32,
+               input_size=256, meanface_type="wflw", backbone_pretrained=True)
 
 model.training(
-        self,
-        annotation_path: str,
-        criterion_cls: nn.Module = nn.MSELoss(),
-        criterion_reg: nn.Module = nn.L1Loss(),
-        learning_rate: float = 0.0001,
-        cls_loss_weight: float = 10.,
-        reg_loss_weight: float = 1.,
-        num_nb: int = 10,
-        num_epochs: int = 60,
-        save_dir: Optional[str] = "./save",
-        save_interval: Optional[int] = 10,
-        save_prefix: Optional[str] = "",
-        decay_steps: Optional[List[int]] = (30, 50),
-        decay_gamma: Optional[float] = 0.1,
-        device: Optional[Union[str, torch.device]] = "cuda",
-        transform: Optional[transforms.LandmarksCompose] = None,
-        coordinates_already_normalized: Optional[bool] = False,
-        **kwargs: Any  # params for DataLoader
+    annotation_path: str,
+    criterion_cls: nn.Module = nn.MSELoss(),
+    criterion_reg: nn.Module = nn.L1Loss(),
+    learning_rate: float = 0.0001,
+    # ...
+    **kwargs: Any  # params for DataLoader
 ) -> nn.Module:
 ```  
 <details>
@@ -265,7 +243,7 @@ def set_custom_meanface(
 
 </details>
 
-Please jump to the entry point of the function for the detail documentations of **training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L159](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). 
+Please jump to the entry point of the function for the detail documentations of **training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L166](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). 
 
 
 ### 👀👇 Inference
@@ -274,39 +252,24 @@ The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be
 #### Python API
 In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
 ```python
-import cv2
 import torchlm
 from torchlm.tools import faceboxesv2
 from torchlm.models import pipnet
 
-img_path = "./1.jpg"
-save_path = "./1.jpg"
-image = cv2.imread(img_path)
-
 torchlm.runtime.bind(faceboxesv2())
 torchlm.runtime.bind(
-  pipnet(
-    backbone="resnet18",
-    pretrained=True,  # will auto download from latest release.
-    num_nb=10,
-    num_lms=98,
-    net_stride=32,
-    input_size=256,
-    meanface_type="wflw",
-    map_location="cpu",
-    checkpoint=None
-    )
-)
+  pipnet(backbone="resnet18", pretrained=True,  
+         num_nb=10, num_lms=98, net_stride=32, input_size=256,
+         meanface_type="wflw", map_location="cpu", checkpoint=None)
+) # will auto download from latest release if pretrained=True
 landmarks, bboxes = torchlm.runtime.forward(image)
 image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
 image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
-cv2.imwrite(save_path, image)    
 ```
 <div align='center'>
-  <img src='docs/assets/pipnet0.jpg' height="180px" width="180px">
-  <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="180px" width="180px">
-  <img src='docs/assets/pipnet_shaolin_soccer.gif' height="180px" width="180px">
-  <img src='docs/assets/pipnet_WFLW_model.gif' height="180px" width="180px">
+  <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="260px" width="260px">
+  <img src='docs/assets/pipnet_shaolin_soccer.gif' height="260px" width="260px">
+  <img src='docs/assets/pipnet_WFLW_model.gif' height="260px" width="260px">
 </div>  
 
 ## 📖 Documentations
