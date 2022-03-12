@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import torchvision
-import albumentations
+# import albumentations
 from torch import Tensor
 from typing import Tuple
 
@@ -58,14 +58,14 @@ def test_torchlm_transforms_pipeline():
         torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),
         torchlm.bind(torchvision.transforms.RandomAutocontrast(p=0.5)),
         torchlm.bind(torchvision.transforms.RandomAdjustSharpness(sharpness_factor=3, p=0.5)),
-        # bind albumentations image only transforms
-        torchlm.bind(albumentations.ColorJitter(p=0.5)),
-        torchlm.bind(albumentations.GlassBlur(p=0.5)),
-        torchlm.bind(albumentations.RandomShadow(p=0.5)),
-        # bind albumentations dual transforms
-        torchlm.bind(albumentations.RandomCrop(height=200, width=200, p=0.5)),
-        torchlm.bind(albumentations.RandomScale(p=0.5)),
-        torchlm.bind(albumentations.Rotate(p=0.5)),
+        # # bind albumentations image only transforms
+        # torchlm.bind(albumentations.ColorJitter(p=0.5)),
+        # torchlm.bind(albumentations.GlassBlur(p=0.5)),
+        # torchlm.bind(albumentations.RandomShadow(p=0.5)),
+        # # bind albumentations dual transforms
+        # torchlm.bind(albumentations.RandomCrop(height=200, width=200, p=0.5)),
+        # torchlm.bind(albumentations.RandomScale(p=0.5)),
+        # torchlm.bind(albumentations.Rotate(p=0.5)),
         # bind custom callable array functions with a given bind prob
         torchlm.bind(callable_array_noop, bind_type=torchlm.BindEnum.Callable_Array, prob=0.5),
         # bind custom callable Tensor functions
@@ -569,20 +569,21 @@ def test_torchlm_transform_align():
 
 
 if __name__ == "__main__":
+    print(torchlm.albumentations_is_available())
     test_torchlm_transforms_pipeline()
-    test_torchlm_transform_mask()
-    test_torchlm_transform_patches_mixup()
-    test_torchlm_transform_backgrounds_mixup()
-    test_torchlm_transform_center_crop()
-    test_torchlm_transform_horizontal()
-    test_torchlm_transform_rotate()
-    test_torchlm_transform_shear()
-    test_torchlm_transform_blur()
-    test_torchlm_transform_translate()
-    test_torchlm_transform_brightness()
-    test_torchlm_transform_hsv()
-    test_torchlm_transform_scale()
-    test_torchlm_transform_align()
+    # test_torchlm_transform_mask()
+    # test_torchlm_transform_patches_mixup()
+    # test_torchlm_transform_backgrounds_mixup()
+    # test_torchlm_transform_center_crop()
+    # test_torchlm_transform_horizontal()
+    # test_torchlm_transform_rotate()
+    # test_torchlm_transform_shear()
+    # test_torchlm_transform_blur()
+    # test_torchlm_transform_translate()
+    # test_torchlm_transform_brightness()
+    # test_torchlm_transform_hsv()
+    # test_torchlm_transform_scale()
+    # test_torchlm_transform_align()
 
 
 
