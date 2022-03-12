@@ -212,7 +212,7 @@ Further, **torchlm.bind** provide a `prob` param at bind-level to force any tran
 </details>
 
 ## 🎉🎉Training  
-In **torchlm**, each model have a high level and user-friendly APIs named `apply_training` and `apply_freezing` for training. `apply_training` handle the training process and `apply_freezing` decide whether to freeze the backbone for fune-tuning.
+In **torchlm**, each model have two high level and user-friendly APIs named `apply_training` and `apply_freezing` for training. `apply_training` handle the training process and `apply_freezing` decide whether to freeze the backbone for fune-tuning.
 
 ### Quick Start
 Here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). You can freeze backbone before fine-tuning through `apply_freezing`.
@@ -237,7 +237,7 @@ model.apply_training(
     shuffle=True
 )
 ```  
-Please jump to the entry point of the function for the detail documentations of **training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L166](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). You might see some logs if the training process is running: 
+Please jump to the entry point of the function for the detail documentations of **apply_training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L166](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). You might see some logs if the training process is running: 
 
 ```shell
 Parameters for DataLoader:  {'batch_size': 16, 'num_workers': 4, 'shuffle': True}
@@ -328,4 +328,5 @@ The code of **torchlm** is released under the MIT License.
 Please consider ⭐ this repo if you like it, as it is the simplest way to support me.
 
 ## 👋 Acknowledgement  
-The implementation of torchlm's transforms borrow the code from [Paperspace](https://github.com/Paperspace/DataAugmentationForObjectDetection/blob/master/data_aug/bbox_util.py) .  
+* The implementation of torchlm's transforms borrow the code from [Paperspace](https://github.com/Paperspace/DataAugmentationForObjectDetection/blob/master/data_aug/bbox_util.py).    
+* **PIPNet**: [Towards Efficient Facial Landmark Detection in the Wild, CVPR2021](https://github.com/jhb86253817/PIPNet)
