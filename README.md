@@ -212,7 +212,7 @@ Further, **torchlm.bind** provide a `prob` param at bind-level to force any tran
 </details>
 
 ## 🎉🎉Training  
-In **torchlm**, each model have a high level and user-friendly APIs named `apply_training` and `apply_freezing` for training.
+In **torchlm**, each model have a high level and user-friendly APIs named `apply_training` and `apply_freezing` for training. `apply_training` handle the training process and `apply_freezing` decide whether to freeze the backbone for fune-tuning.
 
 ### Quick Start
 Here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). You can freeze backbone before fine-tuning through `apply_freezing`.
