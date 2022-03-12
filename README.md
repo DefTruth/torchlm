@@ -33,7 +33,7 @@
 ## 👋 Core Features
 * High level pipeline for **training** and **inference**.
 * Provides **30+** native landmarks data augmentations.
-* Can **bind 80+** transforms from torchvision and albumentations with **one-line-code**.
+* Can **bind 80+** transforms from [torchvision](https://github.com/pytorch/vision) and [albumentations](https://github.com/albumentations-team/albumentations) with **one-line-code**.
 * Support awesome models for face landmarks detection, such as YOLOX, YOLOv5, ResNet, MobileNet, ShuffleNet and PIPNet, etc.
 
 ## 🆕 What's New
@@ -64,11 +64,11 @@
 ## 🛠️ Usage
 
 ### Requirements
-* opencv-python-headless>=4.3.0
+* opencv-python>=4.3.0
 * numpy>=1.14.4
 * torch>=1.6.0
 * torchvision>=0.8.0
-* albumentations>=1.1.0
+* albumentations>=1.1.0 (optional)
 * onnx>=1.8.0
 * onnxruntime>=1.7.0
 * tqdm>=4.10.0
@@ -90,16 +90,6 @@ pip install -e .
 ```
 <div id="torchlm-NOTE"></div>  
 
-**NOTE**: If you have the conflict problem between different installed version of opencv (opencv-python and opencv-python-headless, `ablumentations` need opencv-python-headless). Please uninstall the opencv-python and opencv-python-headless first, and then reinstall torchlm. See [albumentations#1139](https://github.com/albumentations-team/albumentations/issues/1139) for more details.
-
-```shell
-# first uninstall confilct opencvs
-pip uninstall opencv-python
-pip uninstall opencv-python-headless
-pip uninstall torchlm  # if you have installed torchlm
-# then reinstall torchlm
-pip install torchlm # will also install deps, e.g opencv
-```
 
 ### 🌟🌟Data Augmentation
 **torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. 
@@ -138,18 +128,38 @@ transform = torchlm.build_default_transform(
     to_tensor=False  # array -> Tensor & HWC -> CHW
 )
 ```
+See [transforms.md](docs/api/transforms.md) for supported transforms sets and more example can be found at [test/transforms.py](test/transforms.py).
 
-* **bind** **80+** torchvision and albumentations's transforms through **torchlm.bind**
+<details>
+<summary> bind 80+ torchvision and albumentations's transforms </summary>  
+
+**NOTE**: Please install albumentations first if you want to bind albumentations's transforms. If you have the conflict problem between different installed version of opencv (opencv-python and opencv-python-headless, `ablumentations` need opencv-python-headless). Please uninstall the opencv-python and opencv-python-headless first, and then reinstall albumentations. See [albumentations#1140](https://github.com/albumentations-team/albumentations/issues/1140) for more details.
+
+```shell
+# first uninstall confilct opencvs
+pip uninstall opencv-python
+pip uninstall opencv-python-headless
+pip uninstall albumentations  # if you have installed albumentations
+# then reinstall torchlm
+pip install albumentations # will also install deps, e.g opencv
+```
+
+Then, check albumentations whether is available. 
+```python
+torchlm.albumentations_is_available()
+```
+
 ```python
 transform = torchlm.LandmarksCompose([
     torchlm.bind(torchvision.transforms.GaussianBlur(kernel_size=(5, 25)), prob=0.5),  
     torchlm.bind(albumentations.ColorJitter(p=0.5))
 ])
 ```
-See [transforms.md](docs/api/transforms.md) for supported transforms sets and more example can be found at [test/transforms.py](test/transforms.py).
+
+</details>
 
 <details>
-<summary> bind custom callable array or Tensor functions through torchlm.bind </summary>  
+<summary> bind custom callable array or Tensor transform functions </summary>  
 
 ```python
 # First, defined your custom functions
@@ -265,7 +275,7 @@ def set_custom_meanface(
 
 </details>
 
-Please jump to the entry point of the function for the detail documentations of **training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L159](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). 
+Please jump to the entry point of the function for the detail documentations of **training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L166](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). 
 
 
 ### 👀👇 Inference
