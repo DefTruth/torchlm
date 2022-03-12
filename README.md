@@ -215,12 +215,12 @@ model = pipnet(backbone="resnet18", pretrained=False, num_nb=10, num_lms=98, net
                input_size=256, meanface_type="wflw", backbone_pretrained=True)
 
 model.training(
-        annotation_path: str,
-        criterion_cls: nn.Module = nn.MSELoss(),
-        criterion_reg: nn.Module = nn.L1Loss(),
-        learning_rate: float = 0.0001,
-        # ...
-        **kwargs: Any  # params for DataLoader
+    annotation_path: str,
+    criterion_cls: nn.Module = nn.MSELoss(),
+    criterion_reg: nn.Module = nn.L1Loss(),
+    learning_rate: float = 0.0001,
+    # ...
+    **kwargs: Any  # params for DataLoader
 ) -> nn.Module:
 ```  
 <details>
