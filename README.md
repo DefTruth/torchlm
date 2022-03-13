@@ -382,7 +382,7 @@ NME, FR, AUC = model.apply_evaluating(
 )
 print(f"NME: {NME}, FR: {FR}, AUC: {AUC}")
 ```
-Then, you will get the Performance(@NME/@FR@AUC) results.
+Then, you will get the **Performance(@NME@FR@AUC)** results.
 ```shell
 Built _PIPEvalDataset: eval count is 2500 !
 Evaluating PIPNet: 100%|██████████| 2500/2500 [02:53<00:00, 14.45it/s]
@@ -402,7 +402,7 @@ model.apply_exporting(
     opset=12, simplify=True, output_names=None  # use default output names.
 )
 ``` 
-Then, you will get a Static ONNX model file when exporting process is done.
+Then, you will get a Static ONNX model file if exporting process is done.
 ```shell
   ...
   %195 = Add(%259, %189)
