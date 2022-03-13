@@ -228,6 +228,7 @@ model.apply_training(
     save_interval=1,
     logging_interval=1,
     device="cuda",
+    coordinates_already_normalized=True,
     batch_size=16,
     num_workers=4,
     shuffle=True
@@ -240,10 +241,14 @@ Parameters for DataLoader:  {'batch_size': 16, 'num_workers': 4, 'shuffle': True
 Built _PIPTrainDataset: train count is 7500 !
 Epoch 0/9
 ----------
-[Epoch 0/9, Batch 0/468] <Total loss: 0.968761> <cls loss: 0.115902> <x loss: 0.154434> <y loss: 0.217170> <nbx loss: 0.200751> <nby loss: 0.280504>
-[Epoch 0/9, Batch 1/468] <Total loss: 0.529577> <cls loss: 0.082347> <x loss: 0.113045> <y loss: 0.083137> <nbx loss: 0.159639> <nby loss: 0.091410>
-[Epoch 0/9, Batch 2/468] <Total loss: 0.764886> <cls loss: 0.094967> <x loss: 0.139947> <y loss: 0.142193> <nbx loss: 0.189724> <nby loss: 0.198055>
-[Epoch 0/9, Batch 3/468] <Total loss: 0.607258> <cls loss: 0.081174> <x loss: 0.108801> <y loss: 0.125346> <nbx loss: 0.134875> <nby loss: 0.157063>
+[Epoch 0/9, Batch 1/468] <Total loss: 0.372885> <cls loss: 0.063186> <x loss: 0.078508> <y loss: 0.071679> <nbx loss: 0.086480> <nby loss: 0.073031>
+[Epoch 0/9, Batch 2/468] <Total loss: 0.354169> <cls loss: 0.051672> <x loss: 0.075350> <y loss: 0.071229> <nbx loss: 0.083785> <nby loss: 0.072132>
+[Epoch 0/9, Batch 3/468] <Total loss: 0.367538> <cls loss: 0.056038> <x loss: 0.078029> <y loss: 0.076432> <nbx loss: 0.083546> <nby loss: 0.073492>
+[Epoch 0/9, Batch 4/468] <Total loss: 0.339656> <cls loss: 0.053631> <x loss: 0.073036> <y loss: 0.066723> <nbx loss: 0.080007> <nby loss: 0.066258>
+[Epoch 0/9, Batch 5/468] <Total loss: 0.364556> <cls loss: 0.051094> <x loss: 0.077378> <y loss: 0.071951> <nbx loss: 0.086363> <nby loss: 0.077770>
+[Epoch 0/9, Batch 6/468] <Total loss: 0.371356> <cls loss: 0.049117> <x loss: 0.079237> <y loss: 0.075729> <nbx loss: 0.086213> <nby loss: 0.081060>
+...
+[Epoch 0/9, Batch 33/468] <Total loss: 0.298983> <cls loss: 0.041368> <x loss: 0.069912> <y loss: 0.057667> <nbx loss: 0.072996> <nby loss: 0.057040>
 ```
 
 ### Dataset Format👇

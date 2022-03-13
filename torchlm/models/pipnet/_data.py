@@ -85,13 +85,13 @@ class _PIPTrainDataset(Dataset):
             label[:, 0] /= w
             label[:, 1] /= h
 
-        return img, label
+        return img, label  # normalized label
 
     def __getitem__(self, index: int) -> _PIPTrainDataset_Output_Type:
         annotation_string = self.annotations_info[index]
         img_path, label = annotools.decode_annotation(annotation_string=annotation_string)
         img = cv2.imread(img_path)[:, :, ::-1]  # BGR -> RGB
-        img, label = self._apply_transform(img, label)
+        img, normalized_label = self._apply_transform(img, label)
 
         grid_size = int(self.input_size / self.net_stride)
         label_cls = np.zeros((self.num_lms, grid_size, grid_size))
@@ -100,7 +100,7 @@ class _PIPTrainDataset(Dataset):
         label_nb_x = np.zeros((self.num_nb * self.num_lms, grid_size, grid_size))
         label_nb_y = np.zeros((self.num_nb * self.num_lms, grid_size, grid_size))
         label_cls, label_x, label_y, label_nb_x, label_nb_y = _generate_labels(
-            normalized_label=label,
+            normalized_label=normalized_label,
             meanface_indices=self.meanface_indices,
             label_cls=label_cls,
             label_x=label_x,
