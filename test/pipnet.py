@@ -66,6 +66,7 @@ def test_pipnet_training():
         save_prefix="pipnet-wflw-resnet18",
         save_interval=1,
         device="cpu",
+        coordinates_already_normalized=True,
         batch_size=16,
         num_workers=4,
         shuffle=True
@@ -73,27 +74,67 @@ def test_pipnet_training():
 
 
 def test_pipnet_evaluating():
-    pass
+    model = pipnet(
+        backbone="resnet18",
+        pretrained=True,
+        num_nb=10,
+        num_lms=98,
+        net_stride=32,
+        input_size=256,
+        meanface_type="wflw",
+        backbone_pretrained=True,
+        map_location="cpu",
+        checkpoint=None
+    )
+    model.apply_freezing(backbone=True, heads=True, extra=True)
+
+    NME, FR, AUC = model.apply_evaluating(
+        annotation_path="../data/WFLW/convertd/test.txt",
+        norm_indices=[60, 72],
+        coordinates_already_normalized=True,
+        eval_normalized_coordinates=False
+    )
+    print(f"NME: {NME}, FR: {FR}, AUC: {AUC}")
 
 
 def test_pipnet_exporting():
-    pass
+    model = pipnet(
+        backbone="resnet18",
+        pretrained=True,
+        num_nb=10,
+        num_lms=98,
+        net_stride=32,
+        input_size=256,
+        meanface_type="wflw",
+        backbone_pretrained=True,
+        map_location="cpu",
+        checkpoint=None
+    )
+    model.apply_freezing(backbone=True, heads=True, extra=True)
+
+    model.apply_exporting(
+        onnx_path="./save/pipnet/pipnet_resnet18.onnx",
+        opset=12, simplify=True, output_names=None
+    )
 
 
 def test_pipnet_meanface():
     # generate your custom meanface
     custom_meanface, custom_meanface_string = \
         torchlm.data.annotools.generate_meanface(
-            annotation_path="../data/WFLW/convertd/train.txt"
+            annotation_path="../data/WFLW/convertd/train.txt",
+            coordinates_already_normalized=True
         )
     canvas = torchlm.data.annotools.draw_meanface(
-        meanface=custom_meanface)
+        meanface=custom_meanface,
+        coordinates_already_normalized=True
+    )
     cv2.imwrite("./logs/wflw_meanface.jpg", canvas)
 
 
 if __name__ == "__main__":
     # test_pipnet_runtime()
-    # test_pipnet_training()
+    test_pipnet_training()
     # test_pipnet_evaluating()
     # test_pipnet_exporting()
-    test_pipnet_meanface()
+    # test_pipnet_meanface()

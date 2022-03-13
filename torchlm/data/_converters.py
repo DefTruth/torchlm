@@ -6,7 +6,8 @@ from abc import ABCMeta, abstractmethod
 from typing import Tuple, Optional, List, Union
 
 from ..data import annotools
-from ..utils import draw_landmarks
+from ..utils import draw_landmarks, draw_bboxes
+from ..transforms import LandmarksResize
 
 __all__ = ["LandmarksWFLWConverter", "LandmarksALFWConverter",
            "Landmarks300WConverter", "LandmarksCOFWConverter"]
@@ -37,6 +38,8 @@ class LandmarksWFLWConverter(BaseConverter):
             wflw_dir: Optional[str] = "./data/WFLW",
             save_dir: Optional[str] = "./data/WFLW/converted",
             extend: Optional[float] = 0.2,
+            target_size: Optional[int] = None,
+            keep_aspect: Optional[bool] = False,
             rebuild: Optional[bool] = True,
             force_normalize: Optional[bool] = False,
             force_absolute_path: Optional[bool] = True
@@ -45,11 +48,16 @@ class LandmarksWFLWConverter(BaseConverter):
         self.wflw_dir = wflw_dir
         self.save_dir = save_dir
         self.scale = 1. + extend
+        self.target_size = target_size
         self.rebuild = rebuild
         self.force_normalize = force_normalize
         self.force_absolute_path = force_absolute_path
         assert os.path.exists(wflw_dir), "WFLW dataset not found."
         os.makedirs(save_dir, exist_ok=True)
+
+        self.resize_op = None
+        if target_size is not None:
+            self.resize_op = LandmarksResize((target_size, target_size), keep_aspect=keep_aspect)
 
         if self.force_absolute_path:
             wflw_dir = os.path.abspath(wflw_dir)
@@ -72,20 +80,20 @@ class LandmarksWFLWConverter(BaseConverter):
         self.source_test_annotation_path = os.path.join(
             self.wflw_annotation_dir, "list_98pt_rect_attr_test.txt"
         )
+        self.train_annotations, self.test_annotations = self._fetch_annotations()
+        print(f"Train annotations count: {len(self.train_annotations)}\n"
+              f"Test  annotations count: {len(self.test_annotations)}")
 
     def convert(self):
-        train_annotations, test_annotations = self._fetch_annotations()
-        print(f"Train annotations count: {len(train_annotations)}, \n"
-              f"Test  annotations count: {len(test_annotations)}")
-
         train_anno_file = open(self.save_train_annotation_path, "w")
         test_anno_file = open(self.save_test_annotation_path, "w")
 
         for annotation in tqdm.tqdm(
-                train_annotations,
-                desc="converting train_annotations"
+                self.train_annotations,
+                colour="GREEN",
+                desc="Converting WFLW Train Annotations"
         ):
-            crop, landmarks, new_img_name = self._process_wflw(annotation=annotation)
+            crop, landmarks, new_img_name = self._process_annotation(annotation=annotation)
             if crop is None or landmarks is None:
                 continue
             new_img_path = os.path.join(self.save_train_image_dir, new_img_name)
@@ -102,10 +110,11 @@ class LandmarksWFLWConverter(BaseConverter):
         train_anno_file.close()
 
         for annotation in tqdm.tqdm(
-                test_annotations,
-                desc="converting test_annotations"
+                self.test_annotations,
+                colour="GREEN",
+                desc="Converting WFLW Test Annotations"
         ):
-            crop, landmarks, new_img_name = self._process_wflw(annotation=annotation)
+            crop, landmarks, new_img_name = self._process_annotation(annotation=annotation)
             if crop is None or landmarks is None:
                 continue
             new_img_path = os.path.join(self.save_test_image_dir, new_img_name)
@@ -121,49 +130,68 @@ class LandmarksWFLWConverter(BaseConverter):
             test_anno_file.write(annotation_string + "\n")
         test_anno_file.close()
 
-    def show(self, count: int = 10, show_dir: Optional[str] = None):
-        assert os.path.exists(self.save_train_annotation_path), \
-            f"{self.save_train_annotation_path} not found!"
-
-        with open(self.save_train_annotation_path, "r") as fin:
-            annotations = fin.readlines()[:count]
-
-        assert len(annotations) >= 1, "no annotations!"
-
+    def show(
+            self,
+            count: int = 10,
+            show_dir: Optional[str] = None,
+            original: Optional[bool] = False
+    ):
         if show_dir is None:
             show_dir = os.path.join(self.save_dir, "show")
             os.makedirs(show_dir, exist_ok=True)
         else:
             assert os.path.exists(show_dir)
 
-        for annotation_string in annotations:
-            img_path, lms_gt = annotools.decode_annotation(
-                annotation_string=annotation_string)
-            img_name = os.path.basename(img_path)
-            out_path = os.path.join(show_dir, img_name)
+        if not original:
+            assert os.path.exists(self.save_test_annotation_path), \
+                f"{self.save_test_annotation_path} not found!"
 
-            in_img: np.ndarray = cv2.imread(img_path)
-            if in_img is not None:
-                if self.force_normalize:
-                    h, w, _ = in_img.shape
-                    lms_gt[:, 0] *= w
-                    lms_gt[:, 1] *= h
-                out_img = draw_landmarks(in_img, landmarks=lms_gt)
+            with open(self.save_test_annotation_path, "r") as fin:
+                annotations = fin.readlines()[:count]
 
-                cv2.imwrite(out_path, out_img)
+            assert len(annotations) >= 1, "no annotations!"
 
-                print(f"saved show img to: {out_path} !")
+            for annotation_string in annotations:
+                img_path, lms_gt = annotools.decode_annotation(
+                    annotation_string=annotation_string)
+                img_name = os.path.basename(img_path)
+                out_path = os.path.join(show_dir, img_name)
 
-    def _process_wflw(
-            self,
-            annotation: str
-    ) -> Union[Tuple[np.ndarray, np.ndarray, str], Tuple[None, None, None]]:
+                in_img: np.ndarray = cv2.imread(img_path)
+                if in_img is not None:
+                    if self.force_normalize:
+                        h, w, _ = in_img.shape
+                        lms_gt[:, 0] *= w
+                        lms_gt[:, 1] *= h
+                    out_img = draw_landmarks(in_img, landmarks=lms_gt)
 
+                    cv2.imwrite(out_path, out_img)
+
+                    print(f"saved show img to: {out_path} !")
+        else:
+            assert len(self.test_annotations) >= 1
+            # show original annotations without any process
+            tmp_annotations = self.test_annotations[:count]
+
+            for annotation in tmp_annotations:
+                image, landmarks, bbox, new_img_name = self._get_annotation(annotation=annotation)
+                bbox = np.expand_dims(np.array(bbox), axis=0)  # (1, 4)
+                image = draw_bboxes(image, bboxes=bbox)
+                image = draw_landmarks(image, landmarks=landmarks)
+                out_path = os.path.join(show_dir, new_img_name)
+
+                cv2.imwrite(out_path, image)
+
+                print(f"saved show original img to: {out_path} !")
+
+    def _get_annotation(self, annotation: str) \
+            -> Union[Tuple[np.ndarray, np.ndarray, List[float], str],
+                     Tuple[None, None, None, None]]:
         annotation = annotation.strip("\n").strip(" ").split(" ")
         image_name = annotation[-1]
         image_path = os.path.join(self.wflw_images_dir, image_name)
         if not os.path.exists(image_path):
-            return None, None, None
+            return None, None, None, None
 
         image = cv2.imread(image_path)
         image_height, image_width, _ = image.shape
@@ -177,26 +205,54 @@ class LandmarksWFLWConverter(BaseConverter):
         bbox = [float(x) for x in bbox]
         xmin, ymin, xmax, ymax = bbox
 
+        bbox = [xmin, ymin, xmax, ymax]
+        # the same image would contains more than 1 face.
+        new_img_name = image_name.replace("/", "_").split(".")[0] + f"x{int(xmin)}y{int(ymin)}.jpg"
+
+        return image, landmarks, bbox, new_img_name
+
+    def _process_annotation(
+            self,
+            annotation: str
+    ) -> Union[Tuple[np.ndarray, np.ndarray, str], Tuple[None, None, None]]:
+
+        image, landmarks, bbox, new_img_name = self._get_annotation(annotation=annotation)
+
+        if image is None:
+            return None, None, None
+
+        image_height, image_width, _ = image.shape
+
+        xmin, ymin, xmax, ymax = bbox
         width = xmax - xmin
         height = ymax - ymin
+        # padding
         xmin -= width * (self.scale - 1.) / 2.
         ymin -= height * (self.scale - 1.) / 2.
         xmax += width * (self.scale - 1.) / 2.
         ymax += height * (self.scale - 1.) / 2.
+
         xmin = int(max(xmin, 0))
         ymin = int(max(ymin, 0))
         xmax = int(min(xmax, image_width - 1))
         ymax = int(min(ymax, image_height - 1))
+        # update h and w
+        width = xmax - xmin
+        height = ymax - ymin
+        # crop padded face
         crop = image[int(ymin):int(ymax), int(xmin):int(xmax), :]
         # adjust according to left-top corner
         landmarks[:, 0] -= float(xmin)
         landmarks[:, 1] -= float(ymin)
 
+        if self.target_size is not None and self.resize_op is not None:
+            crop, landmarks = self.resize_op(crop, landmarks)
+            # update h and w of resized crop
+            height, width, _ = crop.shape
+
         if self.force_normalize:
             landmarks[:, 0] /= float(width)
             landmarks[:, 1] /= float(height)
-
-        new_img_name = image_name.replace("/", "_")
 
         return crop, landmarks, new_img_name
 

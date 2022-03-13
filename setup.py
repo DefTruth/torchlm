@@ -1,5 +1,6 @@
 import setuptools
 from pathlib import Path
+from torchlm import __version__
 
 PATH_ROOT = Path(__file__).parent.resolve()
 
@@ -14,7 +15,7 @@ def get_long_description():
 
 setuptools.setup(
     name="torchlm",
-    version="0.1.6.4",
+    version=__version__,
     author="DefTruth",
     author_email="qyjdef@163.com",
     description="A PyTorch landmarks-only library with 100+ data augmentations, "

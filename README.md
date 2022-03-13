@@ -65,8 +65,8 @@
 ## 🛠️Installation
 you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). 
 ```shell
-pip install torchlm
-pip install torchlm -i https://pypi.org/simple/ # or install from specific pypi mirrors use '-i'
+pip install torchlm>=0.1.6.5 # or install the latest pypi version `pip install torchlm`
+pip install torchlm>=0.1.6.5 -i https://pypi.org/simple/ # or install from specific pypi mirrors use '-i'
 ```
 or install from source if you want the latest torchlm and install it in editable mode with `-e`.
 ```shell
@@ -228,6 +228,7 @@ model.apply_training(
     save_interval=1,
     logging_interval=1,
     device="cuda",
+    coordinates_already_normalized=True,
     batch_size=16,
     num_workers=4,
     shuffle=True
@@ -240,10 +241,14 @@ Parameters for DataLoader:  {'batch_size': 16, 'num_workers': 4, 'shuffle': True
 Built _PIPTrainDataset: train count is 7500 !
 Epoch 0/9
 ----------
-[Epoch 0/9, Batch 0/468] <Total loss: 0.968761> <cls loss: 0.115902> <x loss: 0.154434> <y loss: 0.217170> <nbx loss: 0.200751> <nby loss: 0.280504>
-[Epoch 0/9, Batch 1/468] <Total loss: 0.529577> <cls loss: 0.082347> <x loss: 0.113045> <y loss: 0.083137> <nbx loss: 0.159639> <nby loss: 0.091410>
-[Epoch 0/9, Batch 2/468] <Total loss: 0.764886> <cls loss: 0.094967> <x loss: 0.139947> <y loss: 0.142193> <nbx loss: 0.189724> <nby loss: 0.198055>
-[Epoch 0/9, Batch 3/468] <Total loss: 0.607258> <cls loss: 0.081174> <x loss: 0.108801> <y loss: 0.125346> <nbx loss: 0.134875> <nby loss: 0.157063>
+[Epoch 0/9, Batch 1/468] <Total loss: 0.372885> <cls loss: 0.063186> <x loss: 0.078508> <y loss: 0.071679> <nbx loss: 0.086480> <nby loss: 0.073031>
+[Epoch 0/9, Batch 2/468] <Total loss: 0.354169> <cls loss: 0.051672> <x loss: 0.075350> <y loss: 0.071229> <nbx loss: 0.083785> <nby loss: 0.072132>
+[Epoch 0/9, Batch 3/468] <Total loss: 0.367538> <cls loss: 0.056038> <x loss: 0.078029> <y loss: 0.076432> <nbx loss: 0.083546> <nby loss: 0.073492>
+[Epoch 0/9, Batch 4/468] <Total loss: 0.339656> <cls loss: 0.053631> <x loss: 0.073036> <y loss: 0.066723> <nbx loss: 0.080007> <nby loss: 0.066258>
+[Epoch 0/9, Batch 5/468] <Total loss: 0.364556> <cls loss: 0.051094> <x loss: 0.077378> <y loss: 0.071951> <nbx loss: 0.086363> <nby loss: 0.077770>
+[Epoch 0/9, Batch 6/468] <Total loss: 0.371356> <cls loss: 0.049117> <x loss: 0.079237> <y loss: 0.075729> <nbx loss: 0.086213> <nby loss: 0.081060>
+...
+[Epoch 0/9, Batch 33/468] <Total loss: 0.298983> <cls loss: 0.041368> <x loss: 0.069912> <y loss: 0.057667> <nbx loss: 0.072996> <nby loss: 0.057040>
 ```
 
 ### Dataset Format👇
@@ -283,9 +288,11 @@ Also, a `generate_meanface` API is available in torchlm to help you get meanface
 ```python
 # generate your custom meanface.
 custom_meanface, custom_meanface_string = torchlm.data.annotools.generate_meanface(
-  annotation_path="../data/WFLW/convertd/train.txt")
+  annotation_path="../data/WFLW/convertd/train.txt",
+  coordinates_already_normalized=True)
 # check your generated meanface.
-rendered_meanface = torchlm.data.annotools.draw_meanface(meanface=custom_meanface)
+rendered_meanface = torchlm.data.annotools.draw_meanface(
+  meanface=custom_meanface, coordinates_already_normalized=True)
 cv2.imwrite("./logs/wflw_meanface.jpg", rendered_meanface)
 # setting up your custom meanface
 model.set_custom_meanface(custom_meanface_file_or_string=custom_meanface_string)
@@ -360,10 +367,57 @@ image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
 </div>  
 
 ## 🤠🎯 Evaluating  
-* TODO
+In **torchlm**, each model have a high level and user-friendly API named `apply_evaluating` for evaluation. This method will calculate the NME, FR and AUC for eval dataset. Here is an example of [PIPNet](https://github.com/jhb86253817/PIPNet).
+
+```python
+from torchlm.models import pipnet
+# will auto download pretrained weights from latest release if pretrained=True
+model = pipnet(backbone="resnet18", pretrained=True, num_nb=10, num_lms=98, net_stride=32,
+               input_size=256, meanface_type="wflw", backbone_pretrained=True)
+NME, FR, AUC = model.apply_evaluating(
+    annotation_path="../data/WFLW/convertd/test.txt",
+    norm_indices=[60, 72],  # the indexes of two eyeballs.
+    coordinates_already_normalized=True, 
+    eval_normalized_coordinates=False
+)
+print(f"NME: {NME}, FR: {FR}, AUC: {AUC}")
+```
+Then, you will get the **Performance(@NME@FR@AUC)** results.
+```shell
+Built _PIPEvalDataset: eval count is 2500 !
+Evaluating PIPNet: 100%|██████████| 2500/2500 [02:53<00:00, 14.45it/s]
+NME: 0.04453323229181989, FR: 0.04200000000000004, AUC: 0.5732673333333334
+```
 
 ## ⚙️⚔️ Exporting  
-* TODO
+In **torchlm**, each model have a high level and user-friendly API named `apply_exporting` for ONNX export. Here is an example of [PIPNet](https://github.com/jhb86253817/PIPNet).
+
+```python
+from torchlm.models import pipnet
+# will auto download pretrained weights from latest release if pretrained=True
+model = pipnet(backbone="resnet18", pretrained=True, num_nb=10, num_lms=98, net_stride=32,
+               input_size=256, meanface_type="wflw", backbone_pretrained=True)
+model.apply_exporting(
+    onnx_path="./save/pipnet/pipnet_resnet18.onnx",
+    opset=12, simplify=True, output_names=None  # use default output names.
+)
+``` 
+Then, you will get a Static ONNX model file if the exporting process was done.
+```shell
+  ...
+  %195 = Add(%259, %189)
+  %196 = Relu(%195)
+  %outputs_cls = Conv[dilations = [1, 1], group = 1, kernel_shape = [1, 1], pads = [0, 0, 0, 0], strides = [1, 1]](%196, %cls_layer.weight, %cls_layer.bias)
+  %outputs_x = Conv[dilations = [1, 1], group = 1, kernel_shape = [1, 1], pads = [0, 0, 0, 0], strides = [1, 1]](%196, %x_layer.weight, %x_layer.bias)
+  %outputs_y = Conv[dilations = [1, 1], group = 1, kernel_shape = [1, 1], pads = [0, 0, 0, 0], strides = [1, 1]](%196, %y_layer.weight, %y_layer.bias)
+  %outputs_nb_x = Conv[dilations = [1, 1], group = 1, kernel_shape = [1, 1], pads = [0, 0, 0, 0], strides = [1, 1]](%196, %nb_x_layer.weight, %nb_x_layer.bias)
+  %outputs_nb_y = Conv[dilations = [1, 1], group = 1, kernel_shape = [1, 1], pads = [0, 0, 0, 0], strides = [1, 1]](%196, %nb_y_layer.weight, %nb_y_layer.bias)
+  return %outputs_cls, %outputs_x, %outputs_y, %outputs_nb_x, %outputs_nb_y
+}
+Checking 0/3...
+Checking 1/3...
+Checking 2/3...
+```
 
 ## 📖 Documentations
 * [x] [Data Augmentation's API](docs/api/transforms.md) 

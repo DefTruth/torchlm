@@ -7,12 +7,14 @@ def test_torchlm_data_converter():
         save_dir="../data/WFLW/convertd",
         extend=0.2,
         rebuild=True,
-        force_normalize=False,
+        target_size=256,
+        keep_aspect=False,
+        force_normalize=True,
         force_absolute_path=True
     )
     wflw_converter.convert()
 
-    wflw_converter.show(count=1)
+    wflw_converter.show(count=30, original=False)
 
 
 if __name__ == "__main__":
