@@ -402,7 +402,7 @@ model.apply_exporting(
     opset=12, simplify=True, output_names=None  # use default output names.
 )
 ``` 
-Then, you will get a Static ONNX model file if exporting process is done.
+Then, you will get a Static ONNX model file if the exporting process was done.
 ```shell
   ...
   %195 = Add(%259, %189)
