@@ -12,7 +12,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is aims to build a high level pipeline for face landmarks detection, it supports **training**, **inference** and **100+ data augmentations**, can easily install with **pip**.
+**torchlm** is aims to build a high level pipeline for face landmarks detection, it supports **training**, **evaluating**, **exporting**, **inference** and **100+ data augmentations**, can easily install with **pip**.
 <div align='center'>
   <img src='docs/assets/torchlm-0.png' height="100px" width="720px">
 </div>  
@@ -34,11 +34,11 @@
 * High level pipeline for **training** and **inference**.
 * Provides **30+** native landmarks data augmentations.
 * Can **bind 80+** transforms from [torchvision](https://github.com/pytorch/vision) and [albumentations](https://github.com/albumentations-team/albumentations) with **one-line-code**.
-* Support awesome models for face landmarks detection, such as YOLOX, YOLOv5, ResNet, MobileNet, ShuffleNet and PIPNet, etc.
+* Support [PIPNet](https://arxiv.org/pdf/2003.03771.pdf), YOLOX, ResNet, MobileNet and ShuffleNet for face landmarks detection.
 
 ## 🆕 What's New
 * [2022/03/08]: Add **PIPNet**: [Towards Efficient Facial Landmark Detection in the Wild, CVPR2021](https://github.com/jhb86253817/PIPNet)
-* [2022/02/13]: Add **30+** native data augmentations and **bind** **80+** transforms from torchvision and albumentations.
+* [2022/02/13]: Add **30+** transforms and **bind** **80+** transforms from torchvision and albumentations.
 
 ## ✅ Supported Models Matrix
 ✅ = known work and official supported, ❔ = in my plan, but not coming soon.
@@ -65,25 +65,21 @@
 ## 🛠️Installation
 you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). 
 ```shell
-pip3 install torchlm
-# install from specific pypi mirrors use '-i'
-pip3 install torchlm -i https://pypi.org/simple/
+pip install torchlm
+pip install torchlm -i https://pypi.org/simple/ # or install from specific pypi mirrors use '-i'
 ```
 or install from source if you want the latest torchlm and install it in editable mode with `-e`.
 ```shell
-# clone torchlm repository locally if you want the latest torchlm
 git clone --depth=1 https://github.com/DefTruth/torchlm.git 
-cd torchlm
-# install in editable mode
-pip install -e .
+cd torchlm && pip install -e .
 ```
 <div id="torchlm-NOTE"></div>  
 
 
 ## 🌟🌟Data Augmentation
-**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks.
+**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations. The layout format of landmarks is `xy` with shape `(N, 2)`.
 
-* use almost **30+** native transforms from **torchlm** directly
+Use almost **30+** native transforms from **torchlm** directly
 ```python
 import torchlm
 transform = torchlm.LandmarksCompose([
@@ -120,22 +116,27 @@ transform = torchlm.build_default_transform(
 See [transforms.md](docs/api/transforms.md) for supported transforms sets and more example can be found at [test/transforms.py](test/transforms.py).
 
 <details>
+
+<summary>💡 more details about transform in torchlm </summary>  
+
+**torchlm** provides **30+** native data augmentations for landmarks and can **bind** with **80+** transforms from torchvision and albumentations through **torchlm.bind** method. The layout format of landmarks is `xy` with shape `(N, 2)`, `N` denotes the number of the input landmarks. Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. Yes, is ok if you pass a Tensor to a np.ndarray-like transform, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper. 
+
+<details>
 <summary> bind 80+ torchvision and albumentations's transforms </summary>  
 
 **NOTE**: Please install albumentations first if you want to bind albumentations's transforms. If you have the conflict problem between different installed version of opencv (opencv-python and opencv-python-headless, `ablumentations` need opencv-python-headless). Please uninstall the opencv-python and opencv-python-headless first, and then reinstall albumentations. See [albumentations#1140](https://github.com/albumentations-team/albumentations/issues/1140) for more details.
 
 ```shell
-# first uninstall confilct opencvs
+# first uninstall conflict opencvs
 pip uninstall opencv-python
 pip uninstall opencv-python-headless
 pip uninstall albumentations  # if you have installed albumentations
-# then reinstall torchlm
-pip install albumentations # will also install deps, e.g opencv
+pip install albumentations # then reinstall albumentations, will also install deps, e.g opencv
 ```
 
-Then, check albumentations whether is available. 
+Then, check if albumentations is available. 
 ```python
-torchlm.albumentations_is_available()
+torchlm.albumentations_is_available()  # True or False
 ```
 
 ```python
@@ -199,23 +200,18 @@ LandmarksRandomTranslate() Execution Flag: False
   * Array_In means current transform needs a np.ndarray input and then output a torch Tensor. 
   * Tensor_In means current transform needs a torch Tensor input and then output a np.ndarray. 
     
-  But, is ok if you pass a Tensor to a np.ndarray-like transform, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper.
+  Yes, is ok if you pass a Tensor to a np.ndarray-like transform, **torchlm** will automatically be compatible with different data types and then wrap it back to the original type through a **autodtype** wrapper.
 
 </details>
 
-<details>
-
-<summary> more details about transform in torchlm </summary>  
-
-Further, **torchlm.bind** provide a `prob` param at bind-level to force any transform or callable be a random-style augmentation. The data augmentations in **torchlm** are `safe` and `simplest`. Any transform operations at runtime cause landmarks outside will be auto dropped to keep the number of landmarks unchanged. 
-
 </details>
+
 
 ## 🎉🎉Training  
 In **torchlm**, each model have two high level and user-friendly APIs named `apply_training` and `apply_freezing` for training. `apply_training` handle the training process and `apply_freezing` decide whether to freeze the backbone for fune-tuning.
 
-### Quick Start
-Here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). You can freeze backbone before fine-tuning through `apply_freezing`.
+### Quick Start👇
+Here is an example of [PIPNet](https://arxiv.org/pdf/2003.03771.pdf). You can freeze backbone before fine-tuning through `apply_freezing`.
 
 ```python
 from torchlm.models import pipnet
@@ -237,7 +233,7 @@ model.apply_training(
     shuffle=True
 )
 ```  
-Please jump to the entry point of the function for the detail documentations of **apply_training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L166](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L159). You might see some logs if the training process is running: 
+Please jump to the entry point of the function for the detail documentations of **apply_training** API for each defined models in torchlm, e.g [pipnet/_impls.py#L166](https://github.com/DefTruth/torchlm/blob/main/torchlm/models/pipnet/_impls.py#L166). You might see some logs if the training process is running: 
 
 ```shell
 Parameters for DataLoader:  {'batch_size': 16, 'num_workers': 4, 'shuffle': True}
@@ -250,7 +246,7 @@ Epoch 0/9
 [Epoch 0/9, Batch 3/468] <Total loss: 0.607258> <cls loss: 0.081174> <x loss: 0.108801> <y loss: 0.125346> <nbx loss: 0.134875> <nby loss: 0.157063>
 ```
 
-### Dataset Format
+### Dataset Format👇
 The `annotation_path` parameter is denotes the path to a custom annotation file, the format must be:
 ```shell
 "img0_path x0 y0 x1 y1 ... xn-1,yn-1"
@@ -267,12 +263,13 @@ If the label in annotation_path is already normalized by image size, please set 
 "img3_path x0/w y0/h x1/w y1/h ... xn-1/w,yn-1/h"
 ...
 ```
-Here is a example of [WFLW](torchlm/data/_converters.py) to show you how to prepare the dataset, also see [test/data.py](test/data.py).
+Here is an example of [WFLW](torchlm/data/_converters.py) to show you how to prepare the dataset, also see [test/data.py](test/data.py).
 
-<details>
-<summary> How to train PIPNet in your own dataset and custom meanface settings?  </summary>
+### Additional Custom Settings👋
 
-Setting up your custom meanface and nearest-neighbor landmarks through `set_custom_meanface` method, this method will calculate the distance between landmarks in meanface and auto setup the nearest-neighbors for each landmark. NOTE: The PIPNet will reshape the detection headers if the number of landmarks in custom dataset is not equal with the `num_lms` you initialized.
+Some models in torchlm support additional custom settings beyond the `num_lms` of your custom dataset. For example, [PIPNet](https://arxiv.org/pdf/2003.03771.pdf) need also set a custom meanface generated by your custom dataset. Please jump the source code of each defined model in **torchlm** for the details about additional custom settings to get more flexibilities of training or fine-tuning processes. Here is an example of How to train [PIPNet](https://arxiv.org/pdf/2003.03771.pdf) in your own dataset and custom meanface settings?
+
+Set up your custom meanface and nearest-neighbor landmarks through `pipnet.set_custom_meanface` method, this method will calculate the Euclidean Distance between different landmarks in meanface and will auto set up the nearest-neighbors for each landmark. NOTE: The PIPNet will reshape the detection headers if the number of landmarks in custom dataset is not equal with the `num_lms` you initialized.
 
 ```python
 def set_custom_meanface(custom_meanface_file_or_string: str) -> bool:
@@ -282,7 +279,7 @@ def set_custom_meanface(custom_meanface_file_or_string: str) -> bool:
     :return: status, True if successful.
     """
 ```
-Also, a `generate_meanface` API is available in torchlm to help you get meanface in your custom dataset.
+Also, a `generate_meanface` API is available in torchlm to help you get meanface in custom dataset.
 ```python
 # generate your custom meanface.
 custom_meanface, custom_meanface_string = torchlm.data.annotools.generate_meanface(
@@ -297,12 +294,11 @@ model.set_custom_meanface(custom_meanface_file_or_string=custom_meanface_string)
   <img src='test/assets/wflw_meanface.jpg' height="260px" width="260px">
 </div>  
 
-</details>
 
-## 👀👇 Inference
-### C++ API
+## 🛸🚵‍️ Inference
+### C++ API👀
 The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
-### Python API
+### Python API👇
 In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
 ```python
 import torchlm
@@ -320,10 +316,15 @@ image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
 image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
 ```
 <div align='center'>
-  <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="260px" width="260px">
-  <img src='docs/assets/pipnet_shaolin_soccer.gif' height="260px" width="260px">
-  <img src='docs/assets/pipnet_WFLW_model.gif' height="260px" width="260px">
+  <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="200px" width="400px">
+  <img src='docs/assets/pipnet_WFLW_model.gif' height="200px" width="400px">
 </div>  
+
+## 🤠🎯 Evaluating  
+* TODO
+
+## ⚙️⚔️ Exporting  
+* TODO
 
 ## 📖 Documentations
 * [x] [Data Augmentation's API](docs/api/transforms.md) 
