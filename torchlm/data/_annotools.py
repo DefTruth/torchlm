@@ -1,7 +1,9 @@
 import os
+
+import cv2
 import tqdm
 import numpy as np
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from ..utils import draw_landmarks
 
 
@@ -53,7 +55,30 @@ def decode_annotation(annotation_string: str) -> Tuple[str, np.ndarray]:
 
 def generate_meanface(
         annotation_path: str,
+        coordinates_already_normalized: bool,
+        target_size: Optional[int] = 256,
+        keep_aspect: Optional[bool] = False
 ) -> Tuple[np.ndarray, str]:
+    """
+    :param annotation_path: path to a standard annotation file
+    :param coordinates_already_normalized: denoted the label in annotation_path is
+    normalized(by image size) or not
+    :param target_size: the face in dataset must be in the same size to
+    make sense of the calculated meanface, e.g 256. or the coordinates
+    of landmarks must be already normalized.
+    :param keep_aspect: param for LandmarksResize
+    :return:
+    """
+    # params checks
+    from ..transforms import LandmarksResize
+    resize_op = None
+    if coordinates_already_normalized is None or not coordinates_already_normalized:
+        assert target_size is not None, \
+            "the face in dataset must be " \
+            "in the same size to make sense of the" \
+            " calculated meanface, e.g 256. or the coordinates " \
+            "of landmarks must be already normalized."
+        resize_op = LandmarksResize((target_size, target_size), keep_aspect=keep_aspect)
     annotations_info = fetch_annotations(annotation_path=annotation_path)
     landmarks = []
     for annotation_string in tqdm.tqdm(
@@ -61,9 +86,18 @@ def generate_meanface(
             desc=f"Generating meanface [{annotation_path}]",
             colour="green"
     ):
-        _, lms_gt = decode_annotation(
-            annotation_string=annotation_string)  # (n,2)
-        landmarks.append(np.expand_dims(lms_gt, axis=0))  # (1, n,2)
+        if coordinates_already_normalized:
+            _, lms_gt = decode_annotation(
+                annotation_string=annotation_string)  # (n,2)
+            # append normalized landmarks
+            landmarks.append(np.expand_dims(lms_gt, axis=0))  # (1, n,2)
+        else:
+            img_path, lms_gt = decode_annotation(
+                annotation_string=annotation_string)  # (n,2)
+            img = cv2.imread(img_path)
+            _, lms_gt = resize_op(img, lms_gt)
+            # append un-normalized landmarks with same face size
+            landmarks.append(np.expand_dims(lms_gt, axis=0))  # (1,n,2)
     landmarks = np.concatenate(landmarks, axis=0)  # (m,n,2)
     meanface: np.ndarray = np.mean(landmarks, axis=0, keepdims=False)  # (n,2)
     meanface_string = meanface.flatten().tolist()
@@ -73,14 +107,19 @@ def generate_meanface(
     return meanface, meanface_string
 
 
-def draw_meanface(meanface: np.ndarray) -> np.ndarray:
+def draw_meanface(
+        meanface: np.ndarray,
+        coordinates_already_normalized: bool,
+        target_size: Optional[int] = 256
+) -> np.ndarray:
     # noinspection PyTypeChecker, PyArgumentList
-    if meanface.max() <= 1.:
-        meanface *= 256
+    if coordinates_already_normalized:
+        meanface *= target_size
     x1 = np.min(meanface[:, 0]).item()
     y1 = np.min(meanface[:, 1]).item()
     x2 = np.max(meanface[:, 0]).item()
     y2 = np.max(meanface[:, 1]).item()
+    # padding
     w = int(x2 - x1 + 10)
     h = int(y2 - y1 + 10)
     meanface[:, 0] -= (x1 - 5)

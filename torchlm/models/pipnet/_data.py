@@ -80,6 +80,7 @@ class _PIPTrainDataset(Dataset):
             # converted to Tensor manually
             if isinstance(label, Tensor):
                 label = label.cpu().numpy()
+            # normalize
             h, w, _ = img.shape
             label[:, 0] /= w
             label[:, 1] /= h

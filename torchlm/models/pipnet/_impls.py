@@ -187,7 +187,7 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
         :param logging_interval: iter interval for logging.
         :param transform: user specific transform. If None, torchlm will build a default transform,
          more details can be found at `torchlm.transforms.build_default_transform`
-        :param coordinates_already_normalized: denoted the label in annotation_path is normalized(by image size) of not
+        :param coordinates_already_normalized: denoted the label in annotation_path is normalized(by image size) or not
         :param kwargs:  params for DataLoader
         :return: A trained model.
         """
@@ -229,7 +229,8 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
             annotation_path: str,
             norm_indices: List[int] = (60, 72),
             dataset_type: Optional[str] = None,
-            coordinates_already_normalized: Optional[bool] = False
+            coordinates_already_normalized: Optional[bool] = False,
+            eval_normalized_coordinates: Optional[bool] = False
     ) -> Tuple[float, float, float]:  # NME, FR, AUC
         # prepare dataset
         eval_dataset = _PIPEvalDataset(
@@ -241,7 +242,8 @@ class _PIPNetImpl(nn.Module, LandmarksTrainableBase):
             net=self,
             eval_dataset=eval_dataset,
             norm_indices=norm_indices,
-            dataset_type=dataset_type
+            dataset_type=dataset_type,
+            eval_normalized_coordinates=eval_normalized_coordinates
         )
 
     def apply_exporting(
@@ -286,7 +288,7 @@ def _detecting_impl(
 
     height, width, _ = image.shape
     image: np.ndarray = cv2.resize(image, (net.input_size, net.input_size))  # 256, 256
-    image: Tensor = torch.from_numpy(_normalize(img=image)).unsqueeze(0)  # (1,3,256,256)
+    image: Tensor = torch.from_numpy(_normalize(img=image)).contiguous().unsqueeze(0)  # (1,3,256,256)
     outputs_cls, outputs_x, outputs_y, outputs_nb_x, outputs_nb_y = net.forward(image)
     # (1,68,8,8)
     tmp_batch, tmp_channel, tmp_height, tmp_width = outputs_cls.size()
@@ -312,13 +314,19 @@ def _detecting_impl(
     outputs_nb_y_select = outputs_nb_y_select.squeeze(1).view(-1, net.num_nb)  # (68,10)
 
     # tmp_width=tmp_height=8 max_ids->[0,63] calculate grid center (cx,cy) in 8x8 map
+    # https://github.com/jhb86253817/PIPNet/issues/4
+    # lms_pred_x = (max_ids % tmp_width).view(-1, 1).float() + outputs_x_select.view(-1, 1)  # x=cx+offset_x
+    # lms_pred_y = (max_ids // tmp_width).view(-1, 1).float() + outputs_y_select.view(-1, 1)  # y=cy+offset_y
     lms_pred_x = (max_ids % tmp_width).view(-1, 1).float() + outputs_x_select.view(-1, 1)  # x=cx+offset_x
-    lms_pred_y = (max_ids // tmp_width).view(-1, 1).float() + outputs_y_select.view(-1, 1)  # y=cy+offset_y
+    lms_pred_y = torch.floor(max_ids / tmp_width).view(-1, 1).float() + outputs_y_select.view(-1, 1)  # y=cy+offset_y
     lms_pred_x /= 1.0 * net.input_size / net.net_stride  # normalize coord (x*32)/256
     lms_pred_y /= 1.0 * net.input_size / net.net_stride  # normalize coord (y*32)/256
 
+    # lms_pred_nb_x = (max_ids % tmp_width).view(-1, 1).float() + outputs_nb_x_select  # (68,10)
+    # lms_pred_nb_y = (max_ids // tmp_width).view(-1, 1).float() + outputs_nb_y_select  # (68,10)
+    # https://github.com/jhb86253817/PIPNet/issues/4
     lms_pred_nb_x = (max_ids % tmp_width).view(-1, 1).float() + outputs_nb_x_select  # (68,10)
-    lms_pred_nb_y = (max_ids // tmp_width).view(-1, 1).float() + outputs_nb_y_select  # (68,10)
+    lms_pred_nb_y = torch.floor(max_ids / tmp_width).view(-1, 1).float() + outputs_nb_y_select  # (68,10)
     lms_pred_nb_x = lms_pred_nb_x.view(-1, net.num_nb)  # (68,10)
     lms_pred_nb_y = lms_pred_nb_y.view(-1, net.num_nb)  # (68,10)
     lms_pred_nb_x /= 1.0 * net.input_size / net.net_stride  # normalize coord (nx*32)/256
@@ -332,8 +340,9 @@ def _detecting_impl(
     lms_pred_merge = torch.cat((tmp_x, tmp_y), dim=1)  # (68,2)
     lms_pred_merge = lms_pred_merge.cpu().numpy()  # (68,2)
 
-    lms_pred_merge[:, 0] *= float(width)
-    lms_pred_merge[:, 1] *= float(height)
+    # de-normalize
+    lms_pred_merge[:, 0] *= float(width)  # e.g 256
+    lms_pred_merge[:, 1] *= float(height)  # e.g 256
 
     return lms_pred_merge
 
@@ -514,19 +523,23 @@ def _training_impl(
     return net
 
 
+@torch.no_grad()
 def _evaluating_impl(
         net: _PIPNetImpl,
         eval_dataset: _PIPEvalDataset,
         norm_indices: List[int] = (60, 72),
         dataset_type: Optional[str] = None,
+        eval_normalized_coordinates: Optional[bool] = False
 ) -> Tuple[float, float, float]:
     """
     :param net: PIPNet instance
     :param eval_dataset: _PIPEvalDataset instance
     :param norm_indices: the indexes of two eyeballs.
     :param dataset_type: optional, specific dataset, e.g WFLW/COFW/300W
+    :param eval_normalized_coordinates: evaluating on normalized coordinates
     :return: NME, FR, AUC
     """
+    net.eval()
     import tqdm
     norm_indices = list(norm_indices)
     if dataset_type is not None:
@@ -546,10 +559,18 @@ def _evaluating_impl(
     # evaluating
     for image, lms_gt in tqdm.tqdm(
             eval_dataset,
-            colour="green",
+            colour="YELLOW",
             desc="Evaluating PIPNet"
     ):
-        lms_pred = net.detect(image=image)  # (n,2)
+        lms_pred = net.apply_detecting(image=image)  # (n,2)
+
+        if eval_normalized_coordinates:
+            h, w, _ = image.shape  # e.g 256, 256
+            lms_pred[:, 0] /= float(w)
+            lms_pred[:, 1] /= float(h)
+            lms_gt[:, 0] /= float(w)
+            lms_gt[:, 1] /= float(h)
+
         if norm_indices is not None:
             norm = np.linalg.norm(lms_gt[norm_indices[0]] - lms_gt[norm_indices[1]])
         else:
