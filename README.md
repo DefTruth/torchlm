@@ -65,8 +65,8 @@
 ## 🛠️Installation
 you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). 
 ```shell
-pip install torchlm
-pip install torchlm -i https://pypi.org/simple/ # or install from specific pypi mirrors use '-i'
+pip install torchlm>=0.1.6.5 # or install the latest pypi version `pip install torchlm`
+pip install torchlm>=0.1.6.5 -i https://pypi.org/simple/ # or install from specific pypi mirrors use '-i'
 ```
 or install from source if you want the latest torchlm and install it in editable mode with `-e`.
 ```shell
