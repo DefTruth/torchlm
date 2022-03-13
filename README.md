@@ -367,7 +367,7 @@ image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
 </div>  
 
 ## 🤠🎯 Evaluating  
-In **torchlm**, each model have a high level and user-friendly APIs named `apply_evaluating` for evaluation. This method will calculate the NME, FR and AUC for eval dataset. Here is an example of [PIPNet](https://github.com/jhb86253817/PIPNet).
+In **torchlm**, each model have a high level and user-friendly API named `apply_evaluating` for evaluation. This method will calculate the NME, FR and AUC for eval dataset. Here is an example of [PIPNet](https://github.com/jhb86253817/PIPNet).
 
 ```python
 from torchlm.models import pipnet
@@ -390,7 +390,7 @@ NME: 0.04453323229181989, FR: 0.04200000000000004, AUC: 0.5732673333333334
 ```
 
 ## ⚙️⚔️ Exporting  
-In **torchlm**, each model have a high level and user-friendly APIs named `apply_exporting` for ONNX export. Here is an example of [PIPNet](https://github.com/jhb86253817/PIPNet).
+In **torchlm**, each model have a high level and user-friendly API named `apply_exporting` for ONNX export. Here is an example of [PIPNet](https://github.com/jhb86253817/PIPNet).
 
 ```python
 from torchlm.models import pipnet
