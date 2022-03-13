@@ -297,7 +297,7 @@ model.set_custom_meanface(custom_meanface_file_or_string=custom_meanface_string)
 
 ## 🛸🚵‍️ Inference
 ### C++ APIs👀
-The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit). Here is an example of **1000 Facial Landmarks Detection** using [FaceLandmarks1000](https://github.com/Single430/FaceLandmark1000). Download model from Model-Zoo[<sup>2</sup>](https://github.com/DefTruth/lite.ai.toolkit#lite.ai.toolkit-Model-Zoo).
+The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release in **[lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit)**. Here is an example of **1000 Facial Landmarks Detection** using [FaceLandmarks1000](https://github.com/Single430/FaceLandmark1000). Download model from Model-Zoo[<sup>2</sup>](https://github.com/DefTruth/lite.ai.toolkit#lite.ai.toolkit-Model-Zoo).
 
 ```C++
 #include "lite/lite.h"
