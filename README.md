@@ -12,7 +12,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is aims to build a high level pipeline for face landmarks detection, it supports **training**, **evaluating**, **exporting**, **inference** and **100+ data augmentations**, can easily install with **pip**.
+**torchlm** is aims to build a high level pipeline for face landmarks detection, it supports **training**, **evaluating**, **exporting**, **inference(Python/C++)** and **100+ data augmentations**, can easily install with **pip**.
 <div align='center'>
   <img src='docs/assets/torchlm-0.png' height="100px" width="720px">
 </div>  
@@ -291,14 +291,53 @@ cv2.imwrite("./logs/wflw_meanface.jpg", rendered_meanface)
 model.set_custom_meanface(custom_meanface_file_or_string=custom_meanface_string)
 ```
 <div align='center'>
-  <img src='test/assets/wflw_meanface.jpg' height="260px" width="260px">
+  <img src='test/assets/wflw_meanface.jpg' height="200px" width="200px">
 </div>  
 
 
 ## 🛸🚵‍️ Inference
-### C++ API👀
-The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit).
-### Python API👇
+### C++ APIs👀
+The ONNXRuntime(CPU/GPU), MNN, NCNN and TNN C++ inference of **torchlm** will be release at [lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit). Here is an example of **1000 Facial Landmarks Detection** using [FaceLandmarks1000](https://github.com/Single430/FaceLandmark1000). Download model from Model-Zoo[<sup>2</sup>](https://github.com/DefTruth/lite.ai.toolkit#lite.ai.toolkit-Model-Zoo).
+
+```C++
+#include "lite/lite.h"
+
+static void test_default()
+{
+  std::string onnx_path = "../../../hub/onnx/cv/FaceLandmark1000.onnx";
+  std::string test_img_path = "../../../examples/lite/resources/test_lite_face_landmarks_0.png";
+  std::string save_img_path = "../../../logs/test_lite_face_landmarks_1000.jpg";
+    
+  auto *face_landmarks_1000 = new lite::cv::face::align::FaceLandmark1000(onnx_path);
+
+  lite::types::Landmarks landmarks;
+  cv::Mat img_bgr = cv::imread(test_img_path);
+  face_landmarks_1000->detect(img_bgr, landmarks);
+  lite::utils::draw_landmarks_inplace(img_bgr, landmarks);
+  cv::imwrite(save_img_path, img_bgr);
+  
+  delete face_landmarks_1000;
+}
+```
+The output is:
+<div align='center'>
+  <img src='docs/assets/test_lite_face_landmarks_1000.jpg' height="200px" width="250px">
+  <img src='docs/assets/test_lite_face_landmarks_1000_2.jpg' height="200px" width="250px">
+  <img src='docs/assets/test_lite_face_landmarks_1000_0.jpg' height="200px" width="250px">
+</div>    
+
+More classes for face alignment (68 points, 98 points, 106 points, 1000 points)
+```c++
+auto *align = new lite::cv::face::align::PFLD(onnx_path);  // 106 landmarks, 1.0Mb only!
+auto *align = new lite::cv::face::align::PFLD98(onnx_path);  // 98 landmarks, 4.8Mb only!
+auto *align = new lite::cv::face::align::PFLD68(onnx_path);  // 68 landmarks, 2.8Mb only!
+auto *align = new lite::cv::face::align::MobileNetV268(onnx_path);  // 68 landmarks, 9.4Mb only!
+auto *align = new lite::cv::face::align::MobileNetV2SE68(onnx_path);  // 68 landmarks, 11Mb only!
+auto *align = new lite::cv::face::align::FaceLandmark1000(onnx_path);  // 1000 landmarks, 2.0Mb only!
+```  
+More details of C++ APIs, please check **[lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit)**. ![](https://img.shields.io/github/stars/DefTruth/lite.ai.toolkit.svg?style=social) ![](https://img.shields.io/github/forks/DefTruth/lite.ai.toolkit.svg?style=social) ![](https://img.shields.io/github/watchers/DefTruth/lite.ai.toolkit.svg?style=social)
+
+### Python APIs👇
 In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is a example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
 ```python
 import torchlm
