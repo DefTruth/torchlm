@@ -1,4 +1,4 @@
-# torchlm
+# For torchlm
 opencv-python>=4.3.0
 numpy>=1.14.4
 torch>=1.6.0
@@ -6,4 +6,6 @@ torchvision>=0.8.0
 onnx>=1.8.0
 onnxruntime>=1.7.0
 tqdm>=4.10.0
+# For benchmarks dataset converters
 hdf5storage>=0.1.18
+pandas>=1.2.1

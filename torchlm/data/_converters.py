@@ -850,15 +850,15 @@ class LandmarksAFLWConverter(BaseConverter):
             keep_aspect: Optional[bool] = False,
             rebuild: Optional[bool] = True,
             force_normalize: Optional[bool] = False,
-            force_absolute_path: Optional[bool] = True
+            force_absolute_path: Optional[bool] = True,
+            keep_pipnet_style: Optional[bool] = False,  # for pipnet
+            train_count: Optional[int] = 20000
     ):
         super(LandmarksAFLWConverter, self).__init__()
         import warnings
-        warnings.warn("\nNot support for AFLW now! Converting Skip!\n"
-                      "Because the pre-processes of AFLW need SQLite,\n"
-                      "Not all OS have install it by default!")
-        self._support_status = False
-
+        warnings.warn("Because the pre-processes of AFLW need SQLite,\n"
+                      "Not all OS have install it by default! So, this"
+                      "Converting process may failed.")
         self.data_dir = data_dir
         self.save_dir = save_dir
         self.scale = 1. + extend
@@ -866,6 +866,8 @@ class LandmarksAFLWConverter(BaseConverter):
         self.rebuild = rebuild
         self.force_normalize = force_normalize
         self.force_absolute_path = force_absolute_path
+        self.keep_pipnet_style = keep_pipnet_style
+        self.train_count = train_count
         assert os.path.exists(self.data_dir), "AFLW dataset not found."
         os.makedirs(self.save_dir, exist_ok=True)
 
@@ -878,9 +880,7 @@ class LandmarksAFLWConverter(BaseConverter):
             self.save_dir = os.path.abspath(self.save_dir)
 
         self.source_aflw_anno_sqlite = os.path.join(self.data_dir, "aflw.sqlite")
-        self.source_aflw_image_dirs = ["flickr/0", "flickr/2", "flickr/3"]
-        self.source_aflw_image_dirs = [os.path.join(self.data_dir, x) for x in self.source_aflw_image_dirs]
-        self.source_aflw_image_dirs = [x for x in self.source_aflw_image_dirs if os.path.exists(x)]
+        self.source_aflw_image_dir = os.path.join(self.data_dir, "flickr")
         self.save_train_image_dir = os.path.join(self.save_dir, "image/train")
         self.save_train_annotation_path = os.path.join(self.save_dir, "train.txt")
         self.save_test_image_dir = os.path.join(self.save_dir, "image/test")
@@ -889,40 +889,34 @@ class LandmarksAFLWConverter(BaseConverter):
         os.makedirs(self.save_test_image_dir, exist_ok=True)
 
         self.train_test_annotations = self._fetch_annotations()
-        if self._support_status:
-            print(f"Train annotations count: {len(self.train_test_annotations['train_indices'])}\n"
-                  f"Test  annotations count: {len(self.train_test_annotations['test_indices'])}")
+        print(f"Train annotations count: {len(self.train_test_annotations['train_ids'])}\n"
+              f"Test  annotations count: {len(self.train_test_annotations['test_ids'])}")
 
     def convert(self):
-        if not self._support_status:
-            return
 
         train_anno_file = open(self.save_train_annotation_path, "w")
         test_anno_file = open(self.save_test_annotation_path, "w")
 
-        bboxes = self.train_test_annotations["bboxes"]
-        nameList = self.train_test_annotations["nameList"]
-        annos = self.train_test_annotations["annos"]
-        train_indices = self.train_test_annotations["train_indices"]
-        test_indices = self.train_test_annotations["test_indices"]
+        train_ids = self.train_test_annotations["train_ids"]
+        test_ids = self.train_test_annotations["test_ids"]
 
         # convert train annotations
-
         for i in tqdm.tqdm(
-                train_indices,
+                train_ids,
                 colour="GREEN",
                 desc="Converting AFLW Train Annotations"
         ):
-            # from matlab index
-            image_name = nameList[i - 1][0][0]
-            bbox = bboxes[i - 1]
-            anno = annos[i - 1]
+            # from face_id
+            annotation = self.train_test_annotations[i]
+            file_id = annotation["file_id"]
+            bbox = annotation["bbox"]
+            anno = annotation["anno"]
             crop, landmarks = self._process_annotation(
-                image_name=image_name, bbox=bbox, anno=anno
+                file_id=file_id, bbox=bbox, anno=anno
             )
             if crop is None or landmarks is None:
                 continue
-            new_img_name = f"aflw_train_{image_name.split('.')[0]}_{i}.jpg"
+            new_img_name = f"aflw_train_{file_id.split('.')[0]}_{i}.jpg"
             new_img_path = os.path.join(self.save_train_image_dir, new_img_name)
             if not self.rebuild:
                 if not os.path.exists(new_img_path):
@@ -938,20 +932,21 @@ class LandmarksAFLWConverter(BaseConverter):
 
         # convert test annotations
         for j in tqdm.tqdm(
-                test_indices,
+                test_ids,
                 colour="GREEN",
                 desc="Converting AFLW Test Annotations"
         ):
             # from matlab index
-            image_name = nameList[j - 1][0][0]
-            bbox = bboxes[j - 1]
-            anno = annos[j - 1]
+            annotation = self.train_test_annotations[j]
+            file_id = annotation["file_id"]
+            bbox = annotation["bbox"]
+            anno = annotation["anno"]
             crop, landmarks = self._process_annotation(
-                image_name=image_name, bbox=bbox, anno=anno
+                file_id=file_id, bbox=bbox, anno=anno
             )
             if crop is None or landmarks is None:
                 continue
-            new_img_name = f"aflw_test_{image_name.split('.')[0]}_{j}.jpg"
+            new_img_name = f"aflw_test_{file_id.split('.')[0]}_{j}.jpg"
             new_img_path = os.path.join(self.save_train_image_dir, new_img_name)
             if not self.rebuild:
                 if not os.path.exists(new_img_path):
@@ -971,9 +966,6 @@ class LandmarksAFLWConverter(BaseConverter):
             show_dir: Optional[str] = None,
             original: Optional[bool] = False
     ):
-        if not self._support_status:
-            return
-
         if show_dir is None:
             show_dir = os.path.join(self.save_dir, "show")
             os.makedirs(show_dir, exist_ok=True)
@@ -1007,32 +999,27 @@ class LandmarksAFLWConverter(BaseConverter):
 
                     print(f"saved show img to: {out_path} !")
         else:
-            bboxes = self.train_test_annotations["bboxes"]
-            nameList = self.train_test_annotations["nameList"]
-            annos = self.train_test_annotations["annos"]
-            test_indices = self.train_test_annotations["test_indices"]
+            face_ids = self.train_test_annotations["face_ids"][:count]
 
             # show original annotations without any process
-            # convert test annotations
             for j in tqdm.tqdm(
-                    test_indices,
+                    face_ids,
                     colour="GREEN",
                     desc="Converting AFLW Test Annotations"
             ):
-                # from matlab index
-                image_name = nameList[j - 1][0][0]
-                print(image_name)
-                bbox = bboxes[j - 1]
-                anno = annos[j - 1]
+                annotation = self.train_test_annotations[j]
+                file_id = annotation["file_id"]
+                bbox = annotation["bbox"]
+                anno = annotation["anno"]
                 image, landmarks, bbox = self._get_annotation(
-                    image_name=image_name, bbox=bbox, anno=anno
+                    file_id=file_id, bbox=bbox, anno=anno
                 )
                 if image is None or landmarks is None:
                     continue
                 bbox = np.expand_dims(np.array(bbox), axis=0)  # (1, 4)
                 image = draw_bboxes(image, bboxes=bbox)
                 image = draw_landmarks(image, landmarks=landmarks)
-                new_img_name = f"aflw_test_{image_name.split('.')[0]}_{j}.jpg"
+                new_img_name = f"aflw_test_{file_id.split('.')[0]}_{j}.jpg"
                 out_path = os.path.join(show_dir, new_img_name)
                 cv2.imwrite(out_path, image)
 
@@ -1040,24 +1027,27 @@ class LandmarksAFLWConverter(BaseConverter):
 
     def _get_annotation(
             self,
-            image_name: str,
+            file_id: str,
             bbox: np.ndarray,
             anno: np.ndarray
     ) -> Union[Tuple[np.ndarray, np.ndarray, List[float]],
                Tuple[None, None, None]]:
-        image_files = [os.path.join(x, image_name) for x in self.source_aflw_image_dirs]
-        image_files = [x for x in image_files if os.path.exists(x)]
-        if len(image_files) <= 0:
-            return None, None, None
-        image_path = image_files[0]
+        image_path = os.path.join(self.source_aflw_image_dir, file_id)
         image = cv2.imread(image_path)
+        if image is None:
+            return None, None, None
         image_height, image_width, _ = image.shape
-        landmarks = np.zeros((19, 2))
-        landmarks[:, 0] = anno[:19]
-        landmarks[:, 1] = anno[19:]
+        if self.keep_pipnet_style:
+            landmarks = np.zeros((19, 2))
+            landmarks[:, 0] = anno[:19]
+            landmarks[:, 1] = anno[19:]
+        else:
+            landmarks = np.zeros((21, 2))
+            landmarks[:, 0] = anno[:21]
+            landmarks[:, 1] = anno[21:]
         landmarks[:, 0] = np.minimum(np.maximum(0, landmarks[:, 0]), image_width)
         landmarks[:, 1] = np.minimum(np.maximum(0, landmarks[:, 1]), image_height)
-        xmin, xmax, ymin, ymax = bbox
+        xmin, ymin, xmax, ymax = bbox
         xmin = max(xmin, 0)
         ymin = max(ymin, 0)
         xmax = min(xmax, image_width - 1)
@@ -1068,13 +1058,13 @@ class LandmarksAFLWConverter(BaseConverter):
 
     def _process_annotation(
             self,
-            image_name: str,
+            file_id: str,
             bbox: np.ndarray,
             anno: np.ndarray
     ) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[None, None]]:
 
         image, landmarks, bbox = self._get_annotation(
-            image_name=image_name, bbox=bbox, anno=anno
+            file_id=file_id, bbox=bbox, anno=anno
         )
 
         if image is None:
@@ -1116,43 +1106,69 @@ class LandmarksAFLWConverter(BaseConverter):
         return crop, landmarks
 
     def _fetch_annotations(self) -> dict:
-        # import sqlite3
-        # import pandas as pd
-        # import os
-        # TODO: support AFLW converting for Mac and Linux if SQLite is available
+        import sqlite3
+        import pandas as pd
         print("Fetching annotations ...")
         train_test_annotations = {}
-        #
-        # conn = sqlite3.connect(self.source_aflw_anno_sqlite)
-        # cur = conn.cursor()
-        # cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        # Tables = cur.fetchall()
-        # for table in Tables:
-        #     table_name = table[0]
-        #     print(table_name)
-        #     cur.execute("SELECT * FROM {}".format(table_name))
-        #     col_name_list = [tuple_[0] for tuple_ in cur.description]
-        #     print(col_name_list)
-        #
-        # df_FaceRect = pd.read_sql_query("SELECT face_id,x,y,w,h,annot_type_id FROM FaceRect", conn)
-        # df_FeatureCoords = pd.read_sql_query("SELECT face_id,feature_id,x,y,annot_type_id FROM FeatureCoords", conn)
-        #
-        # print(df_FeatureCoords)
-        # anno_mat = hdf5storage.loadmat(self.source_aflw_anno_mat)
-        # print(anno_mat.keys())
-        # print(anno_mat["facepose"][0])
-        # bboxes = anno_mat['bbox']
-        # annos = anno_mat['data']
-        # nameList = anno_mat['nameList']
-        # ra = anno_mat['ra'][0]
-        # train_indices = ra[:20000]
-        # test_indices = ra[20000:]
-        #
-        # # fetch train annotations
-        # train_test_annotations["bboxes"] = bboxes
-        # train_test_annotations["nameList"] = nameList
-        # train_test_annotations["annos"] = annos
-        # train_test_annotations["train_indices"] = train_indices
-        # train_test_annotations["test_indices"] = test_indices
 
+        conn = sqlite3.connect(self.source_aflw_anno_sqlite)
+        # noinspection SqlDialectInspection
+        faces_df = pd.read_sql_query("SELECT face_id,file_id,db_id FROM Faces", conn)
+        # noinspection SqlDialectInspection
+        feature_coords_df = pd.read_sql_query(
+            "SELECT face_id,feature_id,x,y,annot_type_id FROM FeatureCoords",
+            conn
+        )  # face_id feature_id x y annot_type_id
+        # noinspection SqlDialectInspection
+        face_rects_df = pd.read_sql_query("SELECT face_id,x,y,w,h,annot_type_id FROM FaceRect", conn)
+        face_ids = np.unique(faces_df["face_id"].to_numpy())  # 去重
+        print(f"face_ids: {len(face_ids)}")
+        face_ids = np.sort(face_ids).tolist()
+
+        valid_ids = []
+        # fetch annotations and image names
+        for face_id in tqdm.tqdm(
+                face_ids,
+                colour="YELLOW",
+                desc="Fetching AFLW SOLite"
+        ):
+            try:
+                annotation = {
+                    "file_id": faces_df.loc[faces_df["face_id"] == face_id, "file_id"].values[0],
+                    "db_id": faces_df.loc[faces_df["face_id"] == face_id, "db_id"].values[0]
+                }
+                feature_coords = \
+                    feature_coords_df.loc[feature_coords_df["face_id"] == face_id, :].sort_values(by="feature_id")
+                annotation["feature_id"] = feature_coords["feature_id"].values
+                anno = []
+                if self.keep_pipnet_style:
+                    anno.extend(feature_coords["x"].values[1:-1])  # 19 landmarks
+                    anno.extend(feature_coords["y"].values[1:-1])
+                    if len(anno) != 38:
+                        continue
+                else:
+                    anno.extend(feature_coords["x"].values)  # 21 landmarks
+                    anno.extend(feature_coords["y"].values)
+                    if len(anno) != 42:
+                        continue
+
+                valid_ids.append(face_id)
+                annotation["anno"] = np.array(anno)
+                x1, y1, w, h = face_rects_df.loc[face_rects_df["face_id"]==face_id, :].values[0][1:-1]
+                x2 = x1 + w
+                y2 = y1 + h
+                annotation["bbox"] = np.array([x1, y1, x2, y2])
+                train_test_annotations[face_id] = annotation
+            except:
+                continue
+
+        print(f"valid_ids: {len(valid_ids)}")
+        if self.train_count > len(valid_ids):
+            self.train_count = int(0.75 * len(valid_ids))
+
+        train_test_annotations["face_ids"] = valid_ids
+        train_test_annotations["train_ids"] = valid_ids[:self.train_count]  # e. 20000
+        train_test_annotations["test_ids"] = valid_ids[self.train_count:]
+
+        conn.close()
         return train_test_annotations

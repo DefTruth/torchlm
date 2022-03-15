@@ -33,7 +33,8 @@ setuptools.setup(
         "onnx>=1.8.0",
         "onnxruntime>=1.7.0",
         "tqdm>=4.10.0",
-        "hdf5storage>=0.1.18"
+        "hdf5storage>=0.1.18",
+        "pandas>=1.2.1"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
