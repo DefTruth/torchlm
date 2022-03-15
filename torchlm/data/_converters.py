@@ -495,6 +495,16 @@ class Landmarks300WConverter(BaseConverter):
         train_annotations = []
         test_annotations = []
 
+        for source_train_folder in self.source_train_folders:
+            all_files = sorted(os.listdir(source_train_folder))  # xxx.jpg/png xxx_mirror.jpg/png xxx.pts
+            all_files = [x for x in all_files if x.lower().find("mirror") < 0]  # exclude mirror images
+            img_files = [x for x in all_files if x.lower().endswith("jpg") or x.lower().endswith("png")]
+            pts_files = [x.split(".")[0] + ".pts" for x in img_files]
+            img_files = [os.path.join(source_train_folder, x) for x in img_files]
+            pts_files = [os.path.join(source_train_folder, x) for x in pts_files]
+            pts_files = [x for x in pts_files if os.path.exists(x)]
+            assert len(img_files) == len(pts_files)
+
         return train_annotations, test_annotations
 
 

@@ -2,9 +2,9 @@ from torchlm.data import LandmarksWFLWConverter
 
 
 def test_torchlm_data_converter():
-    wflw_converter = LandmarksWFLWConverter(
+    converter = LandmarksWFLWConverter(
         data_dir="../data/WFLW",
-        save_dir="../data/WFLW/convertd",
+        save_dir="../data/WFLW/converted",
         extend=0.2,
         rebuild=True,
         target_size=256,
@@ -12,9 +12,9 @@ def test_torchlm_data_converter():
         force_normalize=True,
         force_absolute_path=True
     )
-    wflw_converter.convert()
+    converter.convert()
 
-    wflw_converter.show(count=30, original=False)
+    converter.show(count=30, original=False)
 
 
 if __name__ == "__main__":
