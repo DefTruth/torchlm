@@ -27,7 +27,6 @@ class BaseConverter(object):
         """
         raise NotImplementedError
 
-
     def show(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -412,7 +411,6 @@ class Landmarks300WConverter(BaseConverter):
                 image = draw_bboxes(image, bboxes=bbox)
                 image = draw_landmarks(image, landmarks=landmarks)
                 out_path = os.path.join(show_dir, new_img_name)
-
                 cv2.imwrite(out_path, image)
 
                 print(f"saved show original img to: {out_path} !")
@@ -433,7 +431,7 @@ class Landmarks300WConverter(BaseConverter):
             landmarks = fin.readlines()[3:-1]
             landmarks = [x.strip().split() for x in landmarks]
             landmarks = [[int(float(x[0])), int(float(x[1]))] for x in landmarks]  # [(x0,y0),...]
-            landmarks = np.array(landmarks).reshape(-1, 2) # (68,2)
+            landmarks = np.array(landmarks).reshape(-1, 2)  # (68,2)
             landmarks[:, 0] = np.minimum(np.maximum(0, landmarks[:, 0]), image_width)
             landmarks[:, 1] = np.minimum(np.maximum(0, landmarks[:, 1]), image_height)
 
@@ -449,14 +447,14 @@ class Landmarks300WConverter(BaseConverter):
         # ['helen/testset', 'lfpw/testset', 'ibug']
         image_path_splits = image_path.split("/")
         if image_path_splits[-2].find("trainset") >= 0 \
-                or  image_path_splits[-2].find("testset") >= 0:
+                or image_path_splits[-2].find("testset") >= 0:
             # e.g 'helen_trainset' or 'helen_testset'
             image_path_prefix = image_path_splits[-3] + "_" + image_path_splits[-2]
         else:
             # e.g 'afw' or 'ibug'
             image_path_prefix = image_path_splits[-2]
         # e.g helen_trainset_xxx.jpg
-        new_img_name = image_path_prefix + "_" + image_name.split(".")[0] + "jpg"
+        new_img_name = image_path_prefix + "_" + image_name.split(".")[0] + ".jpg"
 
         return image, landmarks, bbox, new_img_name
 
@@ -744,7 +742,7 @@ class LandmarksCOFWConverter(BaseConverter):
             bbox: np.ndarray,
             anno: np.ndarray
     ) -> Union[Tuple[np.ndarray, np.ndarray, List[float]],
-                     Tuple[None, None, None]]:
+               Tuple[None, None, None]]:
         if image is None:
             return None, None, None
         image_height, image_width, _ = image.shape
@@ -831,16 +829,15 @@ class LandmarksCOFWConverter(BaseConverter):
 
         # fetch test annotations
         test_mat = hdf5storage.loadmat(self.source_test_color_mat)
-        test_images = test_mat['IsTr']
-        test_bboxes = test_mat['bboxesTr']
-        test_annos = test_mat['phisTr']
+        test_images = test_mat['IsT']
+        test_bboxes = test_mat['bboxesT']
+        test_annos = test_mat['phisT']
 
         test_annotations["images"] = test_images  # (b,1,h,w,3|1)
         test_annotations["bboxes"] = test_bboxes  # (b,4) xmin, ymin, width, height
         test_annotations["annos"] = test_annos  # (b,29*2) x0,x1,...,y0,y1,...
 
         return train_annotations, test_annotations
-
 
 
 class LandmarksAFLWConverter(BaseConverter):
@@ -856,6 +853,12 @@ class LandmarksAFLWConverter(BaseConverter):
             force_absolute_path: Optional[bool] = True
     ):
         super(LandmarksAFLWConverter, self).__init__()
+        import warnings
+        warnings.warn("\nNot support for AFLW now! Converting Skip!\n"
+                      "Because the pre-processes of AFLW need SQLite,\n"
+                      "Not all OS have install it by default!")
+        self._support_status = False
+
         self.data_dir = data_dir
         self.save_dir = save_dir
         self.scale = 1. + extend
@@ -874,7 +877,7 @@ class LandmarksAFLWConverter(BaseConverter):
             self.data_dir = os.path.abspath(self.data_dir)
             self.save_dir = os.path.abspath(self.save_dir)
 
-        self.source_aflw_anno_mat = os.path.join(self.data_dir, "AFLWinfo_release.mat")
+        self.source_aflw_anno_sqlite = os.path.join(self.data_dir, "aflw.sqlite")
         self.source_aflw_image_dirs = ["flickr/0", "flickr/2", "flickr/3"]
         self.source_aflw_image_dirs = [os.path.join(self.data_dir, x) for x in self.source_aflw_image_dirs]
         self.source_aflw_image_dirs = [x for x in self.source_aflw_image_dirs if os.path.exists(x)]
@@ -886,10 +889,14 @@ class LandmarksAFLWConverter(BaseConverter):
         os.makedirs(self.save_test_image_dir, exist_ok=True)
 
         self.train_test_annotations = self._fetch_annotations()
-        print(f"Train annotations count: {len(self.train_test_annotations['train_indices'])}\n"
-              f"Test  annotations count: {len(self.train_test_annotations['test_indices'])}")
+        if self._support_status:
+            print(f"Train annotations count: {len(self.train_test_annotations['train_indices'])}\n"
+                  f"Test  annotations count: {len(self.train_test_annotations['test_indices'])}")
 
     def convert(self):
+        if not self._support_status:
+            return
+
         train_anno_file = open(self.save_train_annotation_path, "w")
         test_anno_file = open(self.save_test_annotation_path, "w")
 
@@ -964,6 +971,9 @@ class LandmarksAFLWConverter(BaseConverter):
             show_dir: Optional[str] = None,
             original: Optional[bool] = False
     ):
+        if not self._support_status:
+            return
+
         if show_dir is None:
             show_dir = os.path.join(self.save_dir, "show")
             os.makedirs(show_dir, exist_ok=True)
@@ -1011,6 +1021,7 @@ class LandmarksAFLWConverter(BaseConverter):
             ):
                 # from matlab index
                 image_name = nameList[j - 1][0][0]
+                print(image_name)
                 bbox = bboxes[j - 1]
                 anno = annos[j - 1]
                 image, landmarks, bbox = self._get_annotation(
@@ -1021,7 +1032,7 @@ class LandmarksAFLWConverter(BaseConverter):
                 bbox = np.expand_dims(np.array(bbox), axis=0)  # (1, 4)
                 image = draw_bboxes(image, bboxes=bbox)
                 image = draw_landmarks(image, landmarks=landmarks)
-                new_img_name = f"aflw_test_{j}.jpg"
+                new_img_name = f"aflw_test_{image_name.split('.')[0]}_{j}.jpg"
                 out_path = os.path.join(show_dir, new_img_name)
                 cv2.imwrite(out_path, image)
 
@@ -1033,7 +1044,7 @@ class LandmarksAFLWConverter(BaseConverter):
             bbox: np.ndarray,
             anno: np.ndarray
     ) -> Union[Tuple[np.ndarray, np.ndarray, List[float]],
-                     Tuple[None, None, None]]:
+               Tuple[None, None, None]]:
         image_files = [os.path.join(x, image_name) for x in self.source_aflw_image_dirs]
         image_files = [x for x in image_files if os.path.exists(x)]
         if len(image_files) <= 0:
@@ -1105,72 +1116,41 @@ class LandmarksAFLWConverter(BaseConverter):
         return crop, landmarks
 
     def _fetch_annotations(self) -> dict:
-        import hdf5storage
+        # import sqlite3
+        # import pandas as pd
         print("Fetching annotations ...")
         train_test_annotations = {}
-
-        anno_mat = hdf5storage.loadmat(self.source_aflw_anno_mat)
-        bboxes = anno_mat['bbox']
-        annos = anno_mat['data']
-        nameList = anno_mat['nameList']
-        ra = anno_mat['ra'][0]
-        train_indices = ra[:20000]
-        test_indices = ra[20000:]
-
-        # fetch train annotations
-        train_test_annotations["bboxes"] = bboxes
-        train_test_annotations["nameList"] = nameList
-        train_test_annotations["annos"] = annos
-        train_test_annotations["train_indices"] = train_indices
-        train_test_annotations["test_indices"] = test_indices
+        #
+        # conn = sqlite3.connect(self.source_aflw_anno_sqlite)
+        # cur = conn.cursor()
+        # cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        # Tables = cur.fetchall()
+        # for table in Tables:
+        #     table_name = table[0]
+        #     print(table_name)
+        #     cur.execute("SELECT * FROM {}".format(table_name))
+        #     col_name_list = [tuple_[0] for tuple_ in cur.description]
+        #     print(col_name_list)
+        #
+        # df_FaceRect = pd.read_sql_query("SELECT face_id,x,y,w,h,annot_type_id FROM FaceRect", conn)
+        # df_FeatureCoords = pd.read_sql_query("SELECT face_id,feature_id,x,y,annot_type_id FROM FeatureCoords", conn)
+        #
+        # print(df_FeatureCoords)
+        # anno_mat = hdf5storage.loadmat(self.source_aflw_anno_mat)
+        # print(anno_mat.keys())
+        # print(anno_mat["facepose"][0])
+        # bboxes = anno_mat['bbox']
+        # annos = anno_mat['data']
+        # nameList = anno_mat['nameList']
+        # ra = anno_mat['ra'][0]
+        # train_indices = ra[:20000]
+        # test_indices = ra[20000:]
+        #
+        # # fetch train annotations
+        # train_test_annotations["bboxes"] = bboxes
+        # train_test_annotations["nameList"] = nameList
+        # train_test_annotations["annos"] = annos
+        # train_test_annotations["train_indices"] = train_indices
+        # train_test_annotations["test_indices"] = test_indices
 
         return train_test_annotations
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
