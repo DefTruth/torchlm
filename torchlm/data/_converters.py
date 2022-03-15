@@ -1118,6 +1118,8 @@ class LandmarksAFLWConverter(BaseConverter):
     def _fetch_annotations(self) -> dict:
         # import sqlite3
         # import pandas as pd
+        # import os
+        # TODO: support AFLW converting for Mac and Linux if SQLite is available
         print("Fetching annotations ...")
         train_test_annotations = {}
         #
