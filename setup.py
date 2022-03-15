@@ -32,7 +32,8 @@ setuptools.setup(
         "torchvision>=0.8.0",
         "onnx>=1.8.0",
         "onnxruntime>=1.7.0",
-        "tqdm>=4.10.0"
+        "tqdm>=4.10.0",
+        "hdf5storage>=0.1.18"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

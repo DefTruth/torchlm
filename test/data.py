@@ -1,6 +1,5 @@
 from torchlm.data import LandmarksWFLWConverter
 
-
 def test_torchlm_data_converter():
     converter = LandmarksWFLWConverter(
         data_dir="../data/WFLW",
@@ -14,7 +13,7 @@ def test_torchlm_data_converter():
     )
     converter.convert()
 
-    converter.show(count=30, original=False)
+    converter.show(count=30)
 
 
 if __name__ == "__main__":
