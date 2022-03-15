@@ -51,6 +51,7 @@ def test_cofw_converter():
     converter.show(count=30)
 
 def test_aflw_converter():
+    # NOT SUPPORT NOW!
     converter = LandmarksAFLWConverter(
         data_dir="../data/AFLW",
         save_dir="../data/AFLW/converted",
@@ -61,15 +62,15 @@ def test_aflw_converter():
         force_normalize=True,
         force_absolute_path=True
     )
-    # converter.convert()
+    converter.convert()
 
     converter.show(count=30, original=True)
 
 if __name__ == "__main__":
-    # test_wflw_converter()
-    # test_300w_converter()
-    # test_cofw_converter()
-    test_aflw_converter()
+    test_wflw_converter()
+    test_300w_converter()
+    test_cofw_converter()
+    # test_aflw_converter()
     """
     python3 ./data.py
     """
