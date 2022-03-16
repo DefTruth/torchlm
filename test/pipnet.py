@@ -111,11 +111,16 @@ def test_pipnet_exporting():
         map_location="cpu",
         checkpoint=None
     )
-    model.apply_freezing(backbone=True, heads=True, extra=True)
-
     model.apply_exporting(
         onnx_path="./save/pipnet/pipnet_resnet18.onnx",
         opset=12, simplify=True, output_names=None
+    )
+
+    model_f = faceboxesv2()
+    model_f.apply_exporting(
+        onnx_path="./save/faceboxesv2/faceboxesv2-640x640.onnx",
+        opset=12, simplify=True, output_names=None,
+        input_size=640
     )
 
 
@@ -158,9 +163,9 @@ def test_pipnet_runtime_ort():
 
 
 if __name__ == "__main__":
-    # test_pipnet_runtime()
+    test_pipnet_runtime()
+    test_pipnet_training()
+    test_pipnet_evaluating()
+    test_pipnet_exporting()
+    test_pipnet_meanface()
     test_pipnet_runtime_ort()
-    # test_pipnet_training()
-    # test_pipnet_evaluating()
-    # test_pipnet_exporting()
-    # test_pipnet_meanface()

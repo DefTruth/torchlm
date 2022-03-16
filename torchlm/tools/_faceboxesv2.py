@@ -8,7 +8,7 @@ from pathlib import Path
 from torch import Tensor
 import torch.nn.functional as F
 from itertools import product as product
-from typing import Tuple, Union, List, Any
+from typing import Tuple, Union, List, Optional
 
 from ..core import FaceDetBase
 
@@ -160,7 +160,7 @@ class FaceBoxesV2Impl(nn.Module):
             output = (loc.view(loc.size()[0], -1, 4),
                       conf.view(conf.size()[0], -1, self.num_classes))
 
-        return output
+        return output  # loc:(b,?,4) conf:(b,?,2)
 
 
 class PriorBox(object):
@@ -315,7 +315,7 @@ class FaceBoxesV2(FaceDetBase):
         mean_tmp = torch.IntTensor([104, 117, 123]).to(self.device)
         mean_tmp = mean_tmp.unsqueeze(1).unsqueeze(2)
         image_scale -= mean_tmp
-        image_scale = image_scale.float().unsqueeze(0)
+        image_scale = image_scale.float().unsqueeze(0)  # (1,3,H,W)
         scale = scale.to(self.device)
 
         # face detection, float input
@@ -349,8 +349,45 @@ class FaceBoxesV2(FaceDetBase):
         dets[:, :4] /= im_scale  # adapt bboxes to the original image size
         return dets
 
+    def apply_exporting(
+            self,
+            onnx_path: str = "faceboxesv2.onnx",
+            opset: int = 12,
+            simplify: bool = False,
+            input_size: Optional[int] = 640,
+            output_names: Optional[List[str]] = None
+    ) -> None:
+        import onnx
 
-class FaceBoxesV2ORT(FaceDetBase):
+        save_dir = os.path.dirname(onnx_path)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
-    def apply_detecting(self, *args, **kwargs) -> Any:
-        pass
+        if output_names is None:
+            output_names = ["loc", "conf"]
+
+        x = torch.randn((1, 3, input_size, input_size)).float()
+
+        torch.onnx.export(
+            self.net, x,
+            onnx_path,
+            verbose=False,
+            opset_version=opset,
+            input_names=['img'],
+            output_names=output_names
+        )
+        # Checks
+        model_onnx = onnx.load(onnx_path)  # load onnx model
+        onnx.checker.check_model(model_onnx)  # check onnx model
+        print(onnx.helper.printable_graph(model_onnx.graph))  # print
+
+        if simplify:
+            try:
+                import onnxsim
+                model_onnx, check = onnxsim.simplify(
+                    model_onnx, check_n=3)
+                assert check, 'assert check failed'
+                onnx.save(model_onnx, onnx_path)
+
+            except Exception as e:
+                print(f"{onnx_path}:+ simplifier failure: {e}")
