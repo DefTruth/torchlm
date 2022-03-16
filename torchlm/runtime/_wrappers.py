@@ -6,7 +6,7 @@ from typing import Tuple, Any, Union
 _Landmarks = np.ndarray
 _BBoxes = np.ndarray
 
-__all__ = ["set_faces", "set_landmarks", "forward", "bind"]
+__all__ = ["forward", "bind"]
 
 
 class RuntimeWrapper(object):

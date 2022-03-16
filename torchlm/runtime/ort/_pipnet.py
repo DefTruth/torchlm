@@ -4,8 +4,8 @@ import warnings
 import numpy as np
 import onnxruntime as ort
 
-from ..runtime import LandmarksDetBase
-from ..runtime import get_meanface, DEFAULT_MEANFACE_STRINGS
+from .._runtime import LandmarksDetBase
+from .._runtime import get_meanface, DEFAULT_MEANFACE_STRINGS
 
 from typing import Optional, List
 
@@ -194,9 +194,9 @@ class PIPNetORT(LandmarksDetBase):
         # merge predictions
         tmp_nb_x = lms_pred_nb_x[self.reverse_index1, self.reverse_index2].reshape(self.num_lms, self.max_len)
         tmp_nb_y = lms_pred_nb_y[self.reverse_index1, self.reverse_index2].reshape(self.num_lms, self.max_len)
-        tmp_x = np.mean(np.concatenate([lms_pred_x, tmp_nb_x], axis=1), axis=1, keepdims=True) # (68,1)
-        tmp_y = np.mean(np.concatenate([lms_pred_y, tmp_nb_y], axis=1), axis=1, keepdims=True) # (68,1)
-        lms_pred_merge = np.concatenate([tmp_x, tmp_y], axis=1) # (68,2)
+        tmp_x = np.mean(np.concatenate([lms_pred_x.reshape(-1, 1), tmp_nb_x], axis=1), axis=1, keepdims=True)  # (68,1)
+        tmp_y = np.mean(np.concatenate([lms_pred_y.reshape(-1, 1), tmp_nb_y], axis=1), axis=1, keepdims=True)  # (68,1)
+        lms_pred_merge = np.concatenate([tmp_x, tmp_y], axis=1)  # (68,2)
 
         # de-normalize
         lms_pred_merge[:, 0] *= float(width)  # e.g 256

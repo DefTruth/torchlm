@@ -4,6 +4,7 @@ from torchlm.tools import faceboxesv2
 from torchlm.models import pipnet
 from torchlm.runtime import pipnet_ort
 
+
 def test_pipnet_runtime():
     device = "cpu"
     img_path = "./assets/pipnet0.jpg"
@@ -132,9 +133,34 @@ def test_pipnet_meanface():
     cv2.imwrite("./logs/wflw_meanface.jpg", canvas)
 
 
+def test_pipnet_runtime_ort():
+    img_path = "./assets/pipnet0.jpg"
+    save_path = "./logs/pipnet0_ort.jpg"
+    image = cv2.imread(img_path)
+
+    torchlm.runtime.bind(faceboxesv2())
+    torchlm.runtime.bind(
+        pipnet_ort(
+            onnx_path="./save/pipnet/pipnet_resnet18.onnx",
+            num_nb=10,
+            num_lms=98,
+            net_stride=32,
+            input_size=256,
+            meanface_type="wflw"
+        )
+    )
+    landmarks, bboxes = torchlm.runtime.forward(image)
+    image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
+    image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
+
+    cv2.imwrite(save_path, image)
+    print(f"Saved {save_path} !")
+
+
 if __name__ == "__main__":
     # test_pipnet_runtime()
-    test_pipnet_training()
+    test_pipnet_runtime_ort()
+    # test_pipnet_training()
     # test_pipnet_evaluating()
     # test_pipnet_exporting()
     # test_pipnet_meanface()

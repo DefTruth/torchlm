@@ -20,7 +20,7 @@ from .trackers import trackers
 from .smooth import smooth
 # Transforms: data augmentations
 from .transforms import transforms
-# Runtime: Inference runtime stacks
+# Runtime: Inference runtime stacks (usage: torchlm.runtime.bind ...)
 from .runtime import runtime
 # Metrics: NME, FR, AUC
 from .metrics import metrics
