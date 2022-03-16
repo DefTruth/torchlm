@@ -294,7 +294,7 @@ def _detecting_impl(
     tmp_batch, tmp_channel, tmp_height, tmp_width = outputs_cls.size()
     assert tmp_batch == 1
 
-    outputs_cls = outputs_cls.view(tmp_batch * tmp_channel, -1)  # (68.64)
+    outputs_cls = outputs_cls.view(tmp_batch * tmp_channel, -1)  # (68,64)
     max_ids = torch.argmax(outputs_cls, 1)  # (68,)
     max_ids = max_ids.view(-1, 1)  # (68,1)
     max_ids_nb = max_ids.repeat(1, net.num_nb).view(-1, 1)  # (68,10) -> (68*10,1)

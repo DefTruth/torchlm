@@ -2,7 +2,7 @@ import cv2
 import torchlm
 from torchlm.tools import faceboxesv2
 from torchlm.models import pipnet
-
+from torchlm.runtime import pipnet_ort
 
 def test_pipnet_runtime():
     device = "cpu"

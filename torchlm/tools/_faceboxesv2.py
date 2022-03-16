@@ -8,7 +8,7 @@ from pathlib import Path
 from torch import Tensor
 import torch.nn.functional as F
 from itertools import product as product
-from typing import Tuple, Union, List
+from typing import Tuple, Union, List, Any
 
 from ..core import FaceDetBase
 
@@ -318,7 +318,7 @@ class FaceBoxesV2(FaceDetBase):
         image_scale = image_scale.float().unsqueeze(0)
         scale = scale.to(self.device)
 
-        # face detection
+        # face detection, float input
         out = self.net(image_scale)
         priorbox = PriorBox(self.cfg, image_size=(image_scale.size()[2], image_scale.size()[3]))
         priors = priorbox.forward()
@@ -348,3 +348,9 @@ class FaceBoxesV2(FaceDetBase):
 
         dets[:, :4] /= im_scale  # adapt bboxes to the original image size
         return dets
+
+
+class FaceBoxesV2ORT(FaceDetBase):
+
+    def apply_detecting(self, *args, **kwargs) -> Any:
+        pass
