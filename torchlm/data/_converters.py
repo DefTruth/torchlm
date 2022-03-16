@@ -27,6 +27,7 @@ class BaseConverter(object):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def show(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -1002,11 +1003,7 @@ class LandmarksAFLWConverter(BaseConverter):
             face_ids = self.train_test_annotations["face_ids"][:count]
 
             # show original annotations without any process
-            for j in tqdm.tqdm(
-                    face_ids,
-                    colour="GREEN",
-                    desc="Converting AFLW Test Annotations"
-            ):
+            for j in face_ids:
                 annotation = self.train_test_annotations[j]
                 file_id = annotation["file_id"]
                 bbox = annotation["bbox"]
@@ -1154,7 +1151,7 @@ class LandmarksAFLWConverter(BaseConverter):
 
                 valid_ids.append(face_id)
                 annotation["anno"] = np.array(anno)
-                x1, y1, w, h = face_rects_df.loc[face_rects_df["face_id"]==face_id, :].values[0][1:-1]
+                x1, y1, w, h = face_rects_df.loc[face_rects_df["face_id"] == face_id, :].values[0][1:-1]
                 x2 = x1 + w
                 y2 = y1 + h
                 annotation["bbox"] = np.array([x1, y1, x2, y2])
