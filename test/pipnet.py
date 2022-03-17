@@ -99,22 +99,22 @@ def test_pipnet_evaluating():
 
 
 def test_pipnet_exporting():
-    # model = pipnet(
-    #     backbone="resnet18",
-    #     pretrained=True,
-    #     num_nb=10,
-    #     num_lms=98,
-    #     net_stride=32,
-    #     input_size=256,
-    #     meanface_type="wflw",
-    #     backbone_pretrained=True,
-    #     map_location="cpu",
-    #     checkpoint=None
-    # )
-    # model.apply_exporting(
-    #     onnx_path="./save/pipnet/pipnet_resnet18.onnx",
-    #     opset=12, simplify=True, output_names=None
-    # )
+    model = pipnet(
+        backbone="resnet18",
+        pretrained=True,
+        num_nb=10,
+        num_lms=98,
+        net_stride=32,
+        input_size=256,
+        meanface_type="wflw",
+        backbone_pretrained=True,
+        map_location="cpu",
+        checkpoint=None
+    )
+    model.apply_exporting(
+        onnx_path="./save/pipnet/pipnet_resnet18.onnx",
+        opset=12, simplify=True, output_names=None
+    )
 
     model_f = faceboxesv2()
     model_f.apply_exporting(
@@ -163,9 +163,9 @@ def test_pipnet_runtime_ort():
 
 
 if __name__ == "__main__":
-    # test_pipnet_runtime()
-    # test_pipnet_training()
-    # test_pipnet_evaluating()
-    # test_pipnet_exporting()
-    # test_pipnet_meanface()
+    test_pipnet_runtime()
+    test_pipnet_training()
+    test_pipnet_evaluating()
+    test_pipnet_exporting()
+    test_pipnet_meanface()
     test_pipnet_runtime_ort()
