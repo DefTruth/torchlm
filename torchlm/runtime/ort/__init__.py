@@ -1,1 +1,2 @@
-from ._pipnet import PIPNetORT as pipnet_ort
+from ._pipnet import pipnet_ort
+from ._faceboxesv2 import faceboxesv2_ort

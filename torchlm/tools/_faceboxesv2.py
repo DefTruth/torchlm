@@ -155,7 +155,7 @@ class FaceBoxesV2Impl(nn.Module):
 
         if self.phase == "test":
             output = (loc.view(loc.size()[0], -1, 4),
-                      self.softmax(conf.view(-1, self.num_classes)))
+                      self.softmax(conf.view(conf.size()[0], -1, self.num_classes)))
         else:
             output = (loc.view(loc.size()[0], -1, 4),
                       conf.view(conf.size()[0], -1, self.num_classes))
@@ -202,7 +202,7 @@ class PriorBox(object):
         # back to torch land
         output = torch.Tensor(anchors).view(-1, 4)
         if self.clip:
-            output.clamp_(max=1, min=0)
+            output.clamp_(max=1, min=0)  # 0 ~ 1
         return output
 
 
@@ -257,7 +257,7 @@ def _decode(loc: np.ndarray, priors: np.ndarray, variances: List[float]) -> Tens
         priors[:, 2:] * torch.exp(loc[:, 2:] * variances[1])), 1)
     boxes[:, :2] -= boxes[:, 2:] / 2
     boxes[:, 2:] += boxes[:, :2]
-    return boxes
+    return boxes  # normalized coords
 
 
 class FaceBoxesV2(FaceDetBase):
@@ -311,22 +311,22 @@ class FaceBoxesV2(FaceDetBase):
             [image_scale.shape[1], image_scale.shape[0],
              image_scale.shape[1], image_scale.shape[0]]
         )
-        image_scale = torch.from_numpy(image_scale.transpose(2, 0, 1)).to(self.device).int()
+        image_scale = torch.from_numpy(image_scale.transpose(2, 0, 1)).to(self.device).int()  # (3,h,w)
         mean_tmp = torch.IntTensor([104, 117, 123]).to(self.device)
-        mean_tmp = mean_tmp.unsqueeze(1).unsqueeze(2)
+        mean_tmp = mean_tmp.unsqueeze(1).unsqueeze(2)  # (3,) -> (3,1) -> (3,1,1)
         image_scale -= mean_tmp
         image_scale = image_scale.float().unsqueeze(0)  # (1,3,H,W)
         scale = scale.to(self.device)
 
         # face detection, float input
         out = self.net(image_scale)
-        priorbox = PriorBox(self.cfg, image_size=(image_scale.size()[2], image_scale.size()[3]))
+        priorbox = PriorBox(self.cfg, image_size=(image_scale.size()[2], image_scale.size()[3]))  # h,w
         priors = priorbox.forward()
         priors = priors.to(self.device)
         loc, conf = out
         prior_data = priors.data
         boxes = _decode(loc.data.squeeze(0), prior_data, self.cfg['variance'])
-        boxes = boxes * scale
+        boxes = boxes * scale  # rescale to input size: boxes * [w,h]
         boxes = boxes.cpu().numpy()
         scores = conf.data.cpu().numpy()[:, 1]
 

@@ -1,2 +1,3 @@
 recursive-include torchlm/transforms/assets *.jpg
-recursive-include torchlm/tools/assets *.pth *.onnx
+recursive-include torchlm/tools/assets *.pth
+recursive-include torchlm/runtime/ort/assets *.onnx

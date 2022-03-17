@@ -3,11 +3,22 @@
 <div align='center'>
   <img src=https://img.shields.io/badge/PRs-welcome-9cf.svg >
   <img src=https://img.shields.io/pypi/v/torchlm?color=aff >
+  <img src=https://img.shields.io/pypi/pyversions/torchlm?color=dfd >
+  <img src=https://img.shields.io/badge/macos|linux|windows-pass-skyblue.svg >
+  <img src=https://img.shields.io/badge/license-MIT-lightblue.svg >
+</div>   
+
+<!----
+<div align='center'>
+  <img src=https://img.shields.io/badge/PRs-welcome-9cf.svg >
+  <img src=https://img.shields.io/pypi/v/torchlm?color=aff >
   <img src=https://static.pepy.tech/personalized-badge/torchlm?units=international_system&left_color=grey&right_color=pink&left_text=pypi%20downloads >
   <img src=https://img.shields.io/pypi/pyversions/torchlm?color=dfd >
   <img src=https://img.shields.io/badge/macos|linux|windows-pass-skyblue.svg >
   <img src=https://img.shields.io/badge/license-MIT-lightblue.svg >
 </div>   
+---->
+
 <p align="center">English | <a href="docs/api/transforms.md">中文文档</a> | <a href="https://www.zhihu.com/column/c_1426666301352218624">知乎专栏</a> | <a href="https://pepy.tech/project/torchlm">下载统计</a> </p>
 
 
@@ -370,7 +381,10 @@ auto *align = new lite::cv::face::align::FaceLandmark1000(onnx_path);  // 1000 l
 More details of C++ APIs, please check **[lite.ai.toolkit](https://github.com/DefTruth/lite.ai.toolkit)**. ![](https://img.shields.io/github/stars/DefTruth/lite.ai.toolkit.svg?style=social) ![](https://img.shields.io/github/forks/DefTruth/lite.ai.toolkit.svg?style=social) ![](https://img.shields.io/github/watchers/DefTruth/lite.ai.toolkit.svg?style=social)
 
 ### Python APIs👇
-In **torchlm**, a high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes, here is an example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
+In **torchlm**, we provide pipelines for deploying models with [PyTorch](https://github.com/pytorch/pytorch) and [ONNXRuntime](https://github.com/microsoft/onnxruntime). A high level API named `runtime.bind` can bind face detection and landmarks models together, then you can run the `runtime.forward` API to get the output landmarks and bboxes. Here is an example of [PIPNet](https://github.com/jhb86253817/PIPNet). Pretrained weights of PIPNet, [Download](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha).
+
+#### Inference on PyTorch Backend
+
 ```python
 import torchlm
 from torchlm.tools import faceboxesv2
@@ -382,6 +396,20 @@ torchlm.runtime.bind(
          num_nb=10, num_lms=98, net_stride=32, input_size=256,
          meanface_type="wflw", map_location="cpu", checkpoint=None)
 ) # will auto download pretrained weights from latest release if pretrained=True
+landmarks, bboxes = torchlm.runtime.forward(image)
+image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
+image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
+```
+#### Inference on ONNXRuntime Backend
+```python
+import torchlm
+from torchlm.runtime import faceboxesv2_ort, pipnet_ort
+
+torchlm.runtime.bind(faceboxesv2_ort())
+torchlm.runtime.bind(
+  pipnet_ort(onnx_path="pipnet_resnet18.onnx",num_nb=10,
+             num_lms=98, net_stride=32,input_size=256, meanface_type="wflw")
+)
 landmarks, bboxes = torchlm.runtime.forward(image)
 image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
 image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)

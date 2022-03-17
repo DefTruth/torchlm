@@ -3,11 +3,12 @@ import cv2
 import warnings
 import numpy as np
 import onnxruntime as ort
+from typing import Optional, List
 
 from .._runtime import LandmarksDetBase
 from .._runtime import get_meanface, DEFAULT_MEANFACE_STRINGS
 
-from typing import Optional, List
+__all__ = ["pipnet_ort"]
 
 
 def _normalize(
@@ -29,7 +30,7 @@ def _normalize(
     return img.astype(np.float32)
 
 
-class PIPNetORT(LandmarksDetBase):
+class _PIPNetORT(LandmarksDetBase):
 
     def __init__(
             self,
@@ -40,6 +41,7 @@ class PIPNetORT(LandmarksDetBase):
             net_stride: Optional[int] = 32,
             meanface_type: Optional[str] = None
     ):
+        super(_PIPNetORT, self).__init__()
         assert os.path.exists(onnx_path)
         self.onnx_path = onnx_path
         self.num_nb = num_nb
@@ -62,12 +64,16 @@ class PIPNetORT(LandmarksDetBase):
             providers=self.providers
         )
         self.input_name = self.session.get_inputs()[0].name
+        self.input_shape = self.session.get_inputs()[0].shape
         self.output_names = [x.name for x in self.session.get_outputs()]
+        self.output_shapes = [x.shape for x in self.session.get_outputs()]
         print(f"PIPNetORT Running Device: {self.device},"
               f" Available Providers: {self.providers}\n"
               f"Model Loaded From: {self.onnx_path}\n"
               f"Input Name: {self.input_name},"
-              f" Output Names: {self.output_names}")
+              f" Input Shape: {self.input_shape}"
+              f" Output Names: {self.output_names},"
+              f" Output Shapes: {self.output_shapes}")
 
     def set_custom_meanface(
             self,
@@ -203,3 +209,7 @@ class PIPNetORT(LandmarksDetBase):
         lms_pred_merge[:, 1] *= float(height)  # e.g 256
 
         return lms_pred_merge
+
+
+# Export Alias
+pipnet_ort = _PIPNetORT
