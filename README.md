@@ -54,6 +54,12 @@
 ## ✅ Supported Models Matrix
 ✅ = known work and official supported, ❔ = in my plan, but not coming soon.
 
+### Face Detection
+|[FaceBoxesV2](https://github.com/jhb86253817/FaceBoxesV2)|YOLO5Face|SCRFD|RetinaFace|...|
+|:---:|:---:|:---:|:---:|:---:|
+|✅|❔|❔|❔|❔|
+
+### Face Landmarks Detection
 |[PIPNet](https://github.com/jhb86253817/PIPNet)|YOLOX|YOLOv5|NanoDet|ResNet|MobileNet|ShuffleNet|VIT|...|
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:
 |✅|❔|❔|❔|❔|❔|❔|❔|❔|❔|❔|
