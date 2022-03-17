@@ -6,7 +6,7 @@ from typing import Tuple, Any, Union
 _Landmarks = np.ndarray
 _BBoxes = np.ndarray
 
-__all__ = ["set_faces", "set_landmarks", "forward", "bind"]
+__all__ = ["forward", "bind"]
 
 
 class RuntimeWrapper(object):
@@ -51,6 +51,9 @@ class RuntimeWrapper(object):
 
         det_num = bboxes.shape[0]
         landmarks = []
+        if det_num == 0:
+            return np.array(landmarks), bboxes
+
         for i in range(det_num):
             x1 = int(bboxes[i][0])
             y1 = int(bboxes[i][1])
