@@ -1,5 +1,6 @@
 ![torchlm-logo](docs/res/logo.png)    
 
+<!----
 <div align='center'>
   <img src=https://img.shields.io/badge/PRs-welcome-9cf.svg >
   <img src=https://img.shields.io/pypi/v/torchlm?color=aff >
@@ -7,8 +8,8 @@
   <img src=https://img.shields.io/badge/macos|linux|windows-pass-skyblue.svg >
   <img src=https://img.shields.io/badge/license-MIT-lightblue.svg >
 </div>   
+---->
 
-<!----
 <div align='center'>
   <img src=https://img.shields.io/badge/PRs-welcome-9cf.svg >
   <img src=https://img.shields.io/pypi/v/torchlm?color=aff >
@@ -17,7 +18,6 @@
   <img src=https://img.shields.io/badge/macos|linux|windows-pass-skyblue.svg >
   <img src=https://img.shields.io/badge/license-MIT-lightblue.svg >
 </div>   
----->
 
 <p align="center">English | <a href="docs/api/transforms.md">中文文档</a> | <a href="https://www.zhihu.com/column/c_1426666301352218624">知乎专栏</a> | <a href="https://pepy.tech/project/torchlm">下载统计</a> </p>
 
