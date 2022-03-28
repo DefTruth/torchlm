@@ -328,7 +328,7 @@ class FaceBoxesV2(FaceDetBase):
         boxes = _decode(loc.data.squeeze(0), prior_data, self.cfg['variance'])
         boxes = boxes * scale  # rescale to input size: boxes * [w,h]
         boxes = boxes.cpu().numpy()
-        scores = conf.data.cpu().numpy()[:, 1]
+        scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
 
         # ignore low scores
         inds = np.where(scores > thresh)[0]

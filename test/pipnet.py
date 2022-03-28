@@ -8,21 +8,21 @@ from torchlm.runtime import faceboxesv2_ort, pipnet_ort
 def test_pipnet_runtime():
     device = "cpu"
     img_path = "./assets/pipnet0.jpg"
-    save_path = "./logs/pipnet0.jpg"
-    checkpoint = "./pretrained/pipnet/pipnet_resnet18_10x98x32x256_wflw.pth"
+    save_path = "./logs/pipnet0_300w.jpg"
+    checkpoint = "./pretrained/pipnet/pipnet_resnet101_10x68x32x256_300w.pth"
     image = cv2.imread(img_path)
 
     torchlm.runtime.bind(faceboxesv2())
     torchlm.runtime.bind(
         pipnet(
-            backbone="resnet18",
+            backbone="resnet101",
             pretrained=True,
             num_nb=10,
-            num_lms=98,
+            num_lms=68,
             net_stride=32,
             input_size=256,
-            meanface_type="wflw",
-            backbone_pretrained=True,
+            meanface_type="300w",
+            backbone_pretrained=False,
             map_location=device,
             checkpoint=checkpoint
         )
