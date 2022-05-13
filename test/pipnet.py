@@ -164,8 +164,8 @@ def test_pipnet_runtime_ort():
 
 if __name__ == "__main__":
     test_pipnet_runtime()
-    test_pipnet_training()
-    test_pipnet_evaluating()
-    test_pipnet_exporting()
-    test_pipnet_meanface()
-    test_pipnet_runtime_ort()
+    # test_pipnet_training()
+    # test_pipnet_evaluating()
+    # test_pipnet_exporting()
+    # test_pipnet_meanface()
+    # test_pipnet_runtime_ort()

@@ -285,11 +285,12 @@ def _detecting_impl(
         )
 
     net.eval()
+    device = next(net.parameters()).device
 
     height, width, _ = image.shape
     image: np.ndarray = cv2.resize(image, (net.input_size, net.input_size))  # 256, 256
     image: Tensor = torch.from_numpy(_normalize(img=image)).contiguous().unsqueeze(0)  # (1,3,256,256)
-    outputs_cls, outputs_x, outputs_y, outputs_nb_x, outputs_nb_y = net.forward(image)
+    outputs_cls, outputs_x, outputs_y, outputs_nb_x, outputs_nb_y = net.forward(image.to(device))
     # (1,68,8,8)
     tmp_batch, tmp_channel, tmp_height, tmp_width = outputs_cls.size()
     assert tmp_batch == 1
