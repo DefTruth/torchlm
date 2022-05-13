@@ -82,8 +82,8 @@
 ## 🛠️Installation
 you can install **torchlm** directly from [pypi](https://pypi.org/project/torchlm/). 
 ```shell
-pip install torchlm>=0.1.6.9 # or install the latest pypi version `pip install torchlm`
-pip install torchlm>=0.1.6.9 -i https://pypi.org/simple/ # or install from specific pypi mirrors use '-i'
+pip install torchlm>=0.1.6.10 # or install the latest pypi version `pip install torchlm`
+pip install torchlm>=0.1.6.10 -i https://pypi.org/simple/ # or install from specific pypi mirrors use '-i'
 ```
 or install from source if you want the latest torchlm and install it in editable mode with `-e`.
 ```shell
@@ -400,16 +400,18 @@ import torchlm
 from torchlm.tools import faceboxesv2
 from torchlm.models import pipnet
 
-torchlm.runtime.bind(faceboxesv2())
+torchlm.runtime.bind(faceboxesv2(device="cpu"))  # set device="cuda" if you want to run with CUDA
+# set map_location="cuda" if you want to run with CUDA
 torchlm.runtime.bind(
   pipnet(backbone="resnet18", pretrained=True,  
          num_nb=10, num_lms=98, net_stride=32, input_size=256,
-         meanface_type="wflw", map_location="cpu", checkpoint=None)
+         meanface_type="wflw", map_location="cpu", checkpoint=None) 
 ) # will auto download pretrained weights from latest release if pretrained=True
 landmarks, bboxes = torchlm.runtime.forward(image)
 image = torchlm.utils.draw_bboxes(image, bboxes=bboxes)
 image = torchlm.utils.draw_landmarks(image, landmarks=landmarks)
 ```
+
 #### Inference on ONNXRuntime Backend
 ```python
 import torchlm
