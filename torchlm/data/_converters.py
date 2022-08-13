@@ -490,8 +490,8 @@ class Landmarks300WConverter(BaseConverter):
         # crop padded face
         crop = image[int(ymin):int(ymax), int(xmin):int(xmax), :]
         # adjust according to left-top corner
-        landmarks[:, 0] -= float(xmin)
-        landmarks[:, 1] -= float(ymin)
+        landmarks[:, 0] = landmarks[:, 0] - float(xmin)
+        landmarks[:, 1] = landmarks[:, 1] - float(ymin)
 
         if self.target_size is not None and self.resize_op is not None:
             crop, landmarks = self.resize_op(crop, landmarks)
