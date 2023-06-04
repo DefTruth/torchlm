@@ -23,7 +23,7 @@
 
 
 ## 🤗 Introduction
-**torchlm** is aims to build a high level pipeline for face landmarks detection, it supports **training**, **evaluating**, **exporting**, **inference(Python/C++)** and **100+ data augmentations**, can easily install with **pip**.
+**torchlm** is aims to build a high level pipeline for face landmarks detection, it supports **training**, **evaluating**, **exporting**, **inference(Python/C++)** and **100+ data augmentations**, can easily install via **pip**.
 <div align='center'>
   <img src='https://github.com/DefTruth/torchlm/assets/31974251/40fc4421-f628-4d5b-96e4-d486711284f9' height="100px" width="720px">
 </div>  
