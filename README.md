@@ -1,4 +1,4 @@
-![torchlm-logo](docs/res/logo.png)    
+![torchlm-logo](https://github.com/DefTruth/torchlm/assets/31974251/8baf6761-85c1-4ff0-aef1-291ed1ca469e)    
 
 <!----
 <div align='center'>
@@ -25,7 +25,7 @@
 ## 🤗 Introduction
 **torchlm** is aims to build a high level pipeline for face landmarks detection, it supports **training**, **evaluating**, **exporting**, **inference(Python/C++)** and **100+ data augmentations**, can easily install with **pip**.
 <div align='center'>
-  <img src='docs/assets/torchlm-0.png' height="100px" width="720px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/40fc4421-f628-4d5b-96e4-d486711284f9' height="100px" width="720px">
 </div>  
 <!---
 <div align='center'>
@@ -67,8 +67,8 @@
 ## 🔥🔥Performance(@NME)
 
 <div align='center'>
-  <img src='docs/assets/detection_heads_pipnet.png' height="150px" width="400px">
-  <img src='docs/assets/speed_pipnet.png' height="150px" width="400px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/74a9607a-772e-4508-8c24-efc7404a97cb' height="150px" width="400px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/05f06090-d751-4949-abb1-ea56182fabcd' height="150px" width="400px">
 </div>  
 
 |Model|Backbone|Head|300W|COFW|AFLW|WFLW|Download|
@@ -109,13 +109,13 @@ transform = torchlm.LandmarksCompose([
 ])
 ```  
 <div align='center'>
-  <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
-  <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
-  <img src='docs/res/2_wflw_76.jpg' height="100px" width="100px">
-  <img src='docs/res/2_wflw_162.jpg' height="100px" width="100px">
-  <img src='docs/res/2_wflw_229.jpg' height="100px" width="100px">
-  <img src='docs/res/2_wflw_440.jpg' height="100px" width="100px">
-  <img src='docs/res/2_wflw_478.jpg' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/36c595e0-2d12-43fb-8981-f57fda62a7b4' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/de6259ff-cce3-428b-a16f-369ec2ca7b35' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/a4ffdc92-ce14-400a-a3dc-33bd0b6388bf' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/e8039440-3e8d-4c78-b216-45b8e9996379' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/a48b4793-a837-4221-964a-d3976af4c604' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/7478df16-bc7d-4727-893f-4f3a8db7b442' height="100px" width="100px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/a263d814-1db1-4bc0-b138-c956030f5cc4' height="100px" width="100px">
 </div>  
 
 Also, a user-friendly API `build_default_transform` is available to build a default transform pipeline.
@@ -315,7 +315,7 @@ cv2.imwrite("./logs/wflw_meanface.jpg", rendered_meanface)
 model.set_custom_meanface(custom_meanface_file_or_string=custom_meanface_string)
 ```
 <div align='center'>
-  <img src='test/assets/wflw_meanface.jpg' height="200px" width="200px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/68eb7769-8e91-45ac-a91f-1af576ad5e68' height="200px" width="200px">
 </div>  
 
 ### Benchmarks Dataset Converters👇
@@ -370,9 +370,9 @@ static void test_default()
 ```
 The output is:
 <div align='center'>
-  <img src='docs/assets/test_lite_face_landmarks_1000.jpg' height="200px" width="250px">
-  <img src='docs/assets/test_lite_face_landmarks_1000_2.jpg' height="200px" width="250px">
-  <img src='docs/assets/test_lite_face_landmarks_1000_0.jpg' height="200px" width="250px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/eca927eb-bcba-42dc-9a62-b0e14eb378bd' height="200px" width="250px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/2462d43f-cd6e-4f41-af1c-ee9c2b008237' height="200px" width="250px">
+  <img src='https://github.com/DefTruth/torchlm/assets/31974251/8ebddaea-b5e1-4b5d-b2c5-7015b30f9649' height="200px" width="250px">
 </div>    
 
 More classes for face alignment (68 points, 98 points, 106 points, 1000 points)
