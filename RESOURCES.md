@@ -1,0 +1,5 @@
+![detection_heads_pipnet](https://github.com/DefTruth/torchlm/assets/31974251/74a9607a-772e-4508-8c24-efc7404a97cb)
+![pipnet0](https://github.com/DefTruth/torchlm/assets/31974251/4c4253bd-0b45-4736-a004-5b8db6200442)
+![speed_pipnet](https://github.com/DefTruth/torchlm/assets/31974251/05f06090-d751-4949-abb1-ea56182fabcd)
+![torchlm-0](https://github.com/DefTruth/torchlm/assets/31974251/40fc4421-f628-4d5b-96e4-d486711284f9)
+![logo](https://github.com/DefTruth/torchlm/assets/31974251/8baf6761-85c1-4ff0-aef1-291ed1ca469e)
