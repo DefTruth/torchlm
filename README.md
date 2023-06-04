@@ -27,17 +27,6 @@
 <div align='center'>
   <img src='https://github.com/DefTruth/torchlm/assets/31974251/40fc4421-f628-4d5b-96e4-d486711284f9' height="100px" width="720px">
 </div>  
-<!---
-<div align='center'>
-  <img src='docs/res/2_wflw_44.jpg' height="100px" width="100px">
-  <img src='docs/res/2_wflw_67.jpg' height="100px" width="100px">
-  <img src='docs/res/2_wflw_76.jpg' height="100px" width="100px">
-  <img src='docs/assets/pipnet0.jpg' height="100px" width="100px">
-  <img src='docs/assets/pipnet_300W_CELEBA_model.gif' height="100px" width="100px">
-  <img src='docs/assets/pipnet_shaolin_soccer.gif' height="100px" width="100px">
-  <img src='docs/assets/pipnet_WFLW_model.gif' height="100px" width="100px">
-</div>  
---->
 
 <p align="center"> ❤️ Star 🌟👆🏻 this repo to support me if it does any helps to you, thanks ~  </p>
 
@@ -51,19 +40,6 @@
 * [2022/03/08]: Add **PIPNet**: [Towards Efficient Facial Landmark Detection in the Wild, CVPR2021](https://github.com/jhb86253817/PIPNet)
 * [2022/02/13]: Add **30+** transforms and **bind** **80+** transforms from torchvision and albumentations.
 
-## ✅ Supported Models Matrix
-✅ = known work and official supported, ❔ = in my plan, but not coming soon.
-
-### Face Detection
-|[FaceBoxesV2](https://github.com/jhb86253817/FaceBoxesV2)|YOLO5Face|SCRFD|RetinaFace|...|
-|:---:|:---:|:---:|:---:|:---:|
-|✅|❔|❔|❔|❔|
-
-### Face Landmarks Detection
-|[PIPNet](https://github.com/jhb86253817/PIPNet)|YOLOX|YOLOv5|NanoDet|ResNet|MobileNet|ShuffleNet|VIT|...|
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:
-|✅|❔|❔|❔|❔|❔|❔|❔|❔|❔|❔|
-
 ## 🔥🔥Performance(@NME)
 
 <div align='center'>
@@ -73,10 +49,10 @@
 
 |Model|Backbone|Head|300W|COFW|AFLW|WFLW|Download|
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-|PIPNet|MobileNetV2|Heatmap+Regression+NRM|3.40|3.43|1.52|4.79| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
-|PIPNet|ResNet18|Heatmap+Regression+NRM|3.36|3.31|1.48|4.47| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
-|PIPNet|ResNet50|Heatmap+Regression+NRM|3.34|3.18|1.44|4.48| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
-|PIPNet|ResNet101|Heatmap+Regression+NRM|3.19|3.08|1.42|4.31| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
+|[PIPNet](https://arxiv.org/pdf/2003.03771.pdf)|MobileNetV2|Heatmap+Regression+NRM|3.40|3.43|1.52|4.79| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
+|[PIPNet](https://arxiv.org/pdf/2003.03771.pdf)|ResNet18|Heatmap+Regression+NRM|3.36|3.31|1.48|4.47| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
+|[PIPNet](https://arxiv.org/pdf/2003.03771.pdf)|ResNet50|Heatmap+Regression+NRM|3.34|3.18|1.44|4.48| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
+|[PIPNet](https://arxiv.org/pdf/2003.03771.pdf)|ResNet101|Heatmap+Regression+NRM|3.19|3.08|1.42|4.31| [link](https://github.com/DefTruth/torchlm/releases/tag/torchlm-0.1.6-alpha)|
 
 
 ## 🛠️Installation
