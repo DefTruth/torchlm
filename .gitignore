@@ -7,3 +7,4 @@ dist
 torchlm.egg-info
 *.sh
 pretrained
+tmp
